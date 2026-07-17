@@ -49,7 +49,7 @@ async function supabase(path, { method = "GET", token = SERVICE_KEY, data, prefe
   const response = await fetch(`${SUPABASE_URL}${path}`, {
     method,
     headers: {
-      apikey: SERVICE_KEY,
+      apikey: token,
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
       ...(prefer ? { Prefer: prefer } : {}),
@@ -69,6 +69,18 @@ async function currentUser(req) {
   const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: ANON_KEY, Authorization: `Bearer ${token}` } });
   if (!response.ok) throw Object.assign(new Error("Invalid or expired session"), { status: 401 });
   return { user: await response.json(), token };
+}
+
+async function authRequest(path, data, token) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1${path}`, {
+    method: "POST",
+    headers: { apikey: ANON_KEY, Authorization: `Bearer ${token || ANON_KEY}`, "Content-Type": "application/json" },
+    body: data === undefined ? undefined : JSON.stringify(data),
+  });
+  const text = await response.text();
+  const result = text ? JSON.parse(text) : null;
+  if (!response.ok) throw Object.assign(new Error(result?.msg || result?.message || result?.error_description || "Authentication failed"), { status: response.status });
+  return result;
 }
 
 async function ensureProfile(user) {
@@ -99,6 +111,42 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://api");
     if (req.method === "GET" && url.pathname === "/health") return json(res, 200, { status: "ok" }, origin);
+
+    if (req.method === "POST" && url.pathname === "/api/auth/signup") {
+      rateLimit(req, 5);
+      const input = await body(req);
+      if (!input.email || typeof input.password !== "string" || input.password.length < 8) throw Object.assign(new Error("A valid email and 8-character password are required"), { status: 400 });
+      const result = await authRequest("/signup", { email: input.email, password: input.password, data: { display_name: input.display_name || "Hunter" } });
+      return json(res, 201, result, origin);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/login") {
+      rateLimit(req, 10);
+      const input = await body(req);
+      const result = await authRequest("/token?grant_type=password", { email: input.email, password: input.password });
+      return json(res, 200, result, origin);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/refresh") {
+      rateLimit(req, 30);
+      const input = await body(req);
+      const result = await authRequest("/token?grant_type=refresh_token", { refresh_token: input.refresh_token });
+      return json(res, 200, result, origin);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/logout") {
+      rateLimit(req, 10);
+      const authorization = req.headers.authorization || "";
+      if (!authorization.startsWith("Bearer ")) throw Object.assign(new Error("Authentication required"), { status: 401 });
+      await authRequest("/logout", undefined, authorization.slice(7));
+      return json(res, 204, null, origin);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/profile") {
+      const { user } = await currentUser(req);
+      await ensureProfile(user);
+      return json(res, 200, { id: user.id, email: user.email, display_name: user.user_metadata?.display_name || user.email?.split("@")[0] }, origin);
+    }
 
     if (req.method === "GET" && url.pathname === "/api/sightings") {
       rateLimit(req, 120);

@@ -1,80 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-const reports = [
-  { id: 1, x: 24, y: 27, size: 94, species: "Mallard", count: "25–50", age: "12m", color: "green", confidence: 92 },
-  { id: 2, x: 63, y: 20, size: 66, species: "Teal", count: "10–25", age: "28m", color: "blue", confidence: 84 },
-  { id: 3, x: 73, y: 58, size: 108, species: "Mixed ducks", count: "50+", age: "41m", color: "gold", confidence: 88 },
-  { id: 4, x: 36, y: 70, size: 55, species: "Gadwall", count: "1–10", age: "1h", color: "gray", confidence: 71 },
-];
+const API = process.env.NEXT_PUBLIC_API_URL || "https://flyway-api.zileslabs.com";
+type LiveReport = { id:string; species:string; flock_size:string; behavior:string; zone_latitude:number; zone_longitude:number; confidence:number; occurred_at:string; confirmations:number };
+type MapReport = LiveReport & { x:number; y:number; size:number; color:string; age:string };
 
-const Icon = ({ children }: { children: React.ReactNode }) => <span className="icon" aria-hidden="true">{children}</span>;
+const labels: Record<string,string> = { mallard:"Mallard",teal:"Teal",gadwall:"Gadwall",pintail:"Pintail",wood_duck:"Wood duck",diver:"Diver",mixed:"Mixed ducks",other:"Other ducks",feeding:"Feeding",circling:"Circling",flying_over:"Flying over",resting:"Resting on water",moving_in:"Moving into area" };
+const colors: Record<string,string> = { mallard:"green",teal:"blue",mixed:"gold",gadwall:"gray" };
+const speciesValues: Record<string,string> = { Mallard:"mallard",Teal:"teal",Gadwall:"gadwall","Mixed ducks":"mixed" };
+const amountValues: Record<string,string> = { "1–10":"1-10","10–25":"10-25","25–50":"25-50","50+":"50+" };
 
-export default function Home() {
-  const [selected, setSelected] = useState(reports[0]);
-  const [panel, setPanel] = useState<"map" | "feed" | "saved">("map");
-  const [reporting, setReporting] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [species, setSpecies] = useState("Mallard");
-  const [amount, setAmount] = useState("25–50");
+function age(iso:string){ const m=Math.max(1,Math.floor((Date.now()-new Date(iso).getTime())/60000)); return m<60?`${m}m`:`${Math.floor(m/60)}h`; }
+function position(n:number, offset:number){ const value=Math.abs(Math.sin(n*997+offset)*10000); return 14+(value-Math.floor(value))*72; }
+async function request(path:string, options:RequestInit={}){ const res=await fetch(`${API}${path}`,options); const text=await res.text(); const data=text?JSON.parse(text):null; if(!res.ok) throw new Error(data?.error||"Request failed"); return data; }
 
-  const submit = () => { setSent(true); setTimeout(() => { setReporting(false); setSent(false); }, 1400); };
+export default function Home(){
+  const [reports,setReports]=useState<MapReport[]>([]); const [selectedId,setSelectedId]=useState(""); const [loading,setLoading]=useState(true);
+  const [reporting,setReporting]=useState(false); const [authOpen,setAuthOpen]=useState(false); const [authMode,setAuthMode]=useState<"login"|"signup">("login");
+  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [displayName,setDisplayName]=useState(""); const [authError,setAuthError]=useState("");
+  const [token,setToken]=useState(""); const [profile,setProfile]=useState<{display_name:string}|null>(null); const [species,setSpecies]=useState("Mallard"); const [amount,setAmount]=useState("25–50"); const [behavior,setBehavior]=useState("feeding"); const [status,setStatus]=useState("");
+  const selected=useMemo(()=>reports.find(r=>r.id===selectedId)||reports[0], [reports,selectedId]);
 
-  return (
-    <main className="app-shell">
-      <section className="map" aria-label="Duck activity map">
-        <div className="terrain" />
-        <div className="river river-one" /><div className="river river-two" />
-        <div className="road r1" /><div className="road r2" />
-        <span className="place p1">GRASSY LAKE WMA</span><span className="place p2">OLD RIVER</span><span className="place p3">NORTH MARSH</span>
+  async function load(){ try{ const data=await request("/api/sightings"); const mapped=(data.sightings||[]).map((r:LiveReport)=>({...r,x:position(r.zone_latitude,1),y:position(r.zone_longitude,2),size:r.flock_size==="50+"?108:r.flock_size==="25-50"?92:68,color:colors[r.species]||"gray",age:age(r.occurred_at)})); setReports(mapped); if(mapped[0]) setSelectedId(v=>v||mapped[0].id); } finally{setLoading(false);} }
+  useEffect(()=>{ load(); const saved=localStorage.getItem("flyway_session"); if(saved){ const s=JSON.parse(saved); setToken(s.access_token); request("/api/profile",{headers:{Authorization:`Bearer ${s.access_token}`}}).then(setProfile).catch(()=>localStorage.removeItem("flyway_session")); } },[]);
 
-        <header className="topbar">
-          <div className="brand"><div className="brandmark">F</div><div><strong>FLYWAY</strong><span>DUCK ACTIVITY, NOT HUNTING SPOTS</span></div></div>
-          <button className="area"><Icon>⌖</Icon><span><small>VIEWING</small>Lower Mississippi Flyway</span><b>⌄</b></button>
-          <div className="weather"><span>☁</span><div><b>43°</b><small>NW 12 mph · Rising pressure</small></div></div>
-          <button className="avatar" aria-label="Profile">RW</button>
-        </header>
+  async function authenticate(){ setAuthError(""); try{ const data=await request(`/api/auth/${authMode}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password,display_name:displayName})}); if(!data.access_token){ setAuthError("Check your email to confirm your account, then sign in."); setAuthMode("login"); return; } localStorage.setItem("flyway_session",JSON.stringify(data)); setToken(data.access_token); const p=await request("/api/profile",{headers:{Authorization:`Bearer ${data.access_token}`}}); setProfile(p); setAuthOpen(false); setReporting(true); }catch(e){setAuthError(e instanceof Error?e.message:"Sign in failed");} }
+  async function openReport(){ if(!token){setAuthOpen(true);return;} setReporting(true); }
+  async function submit(){ setStatus("Getting protected location…"); navigator.geolocation.getCurrentPosition(async pos=>{ try{ setStatus("Sharing activity…"); await request("/api/sightings",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({species:speciesValues[species],flock_size:amountValues[amount],behavior,latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy_meters:Math.round(pos.coords.accuracy)})}); setStatus("Activity shared. Your exact location stays private."); await load(); setTimeout(()=>{setReporting(false);setStatus("");},1400); }catch(e){setStatus(e instanceof Error?e.message:"Could not share report");} },()=>setStatus("Location permission is required to report activity."),{enableHighAccuracy:true,timeout:12000}); }
+  async function confirm(){ if(!token){setAuthOpen(true);return;} if(!selected)return; await request(`/api/sightings/${selected.id}/confirm`,{method:"POST",headers:{Authorization:`Bearer ${token}`}}); await load(); }
+  async function logout(){ try{await request("/api/auth/logout",{method:"POST",headers:{Authorization:`Bearer ${token}`}});}catch{} localStorage.removeItem("flyway_session");setToken("");setProfile(null); }
 
-        <aside className="filters">
-          <button className="filter active">All ducks</button><button className="filter">Dabblers</button><button className="filter">Divers</button>
-          <button className="round" aria-label="Map layers">▱</button>
-        </aside>
-
-        {reports.map(r => <button key={r.id} onClick={() => setSelected(r)} className={`hotspot ${r.color} ${selected.id === r.id ? "selected" : ""}`} style={{ left: `${r.x}%`, top: `${r.y}%`, width: r.size, height: r.size }} aria-label={`${r.species}, ${r.count}, ${r.age} ago`}><span>{r.count}</span></button>)}
-
-        <button className="locate" aria-label="Center on my location">⌖</button>
-
-        <section className="report-card">
-          <button className="close-card" aria-label="Close">×</button>
-          <div className="report-head"><div className={`duck-badge ${selected.color}`}>⌁</div><div><span className="eyebrow">RECENT ACTIVITY · {selected.age.toUpperCase()} AGO</span><h2>{selected.species}</h2></div><div className="confidence"><b>{selected.confidence}%</b><span>CONFIDENCE</span></div></div>
-          <div className="stats"><div><span>ESTIMATED FLOCK</span><strong>{selected.count} birds</strong></div><div><span>BEHAVIOR</span><strong>Feeding &amp; circling</strong></div><div><span>TREND</span><strong className="up">↗ Building</strong></div></div>
-          <div className="privacy"><Icon>◉</Icon><span><b>Location protected</b>This report is blurred across a 3-mile zone. The hunter’s exact spot is never shown.</span></div>
-          <div className="confirm"><span>Seen them too?</span><button>Not now</button><button className="confirm-btn">✓ Confirm activity</button></div>
-        </section>
-
-        <nav className="bottom-nav" aria-label="Main navigation">
-          <button className={panel === "map" ? "active" : ""} onClick={() => setPanel("map")}><Icon>⌖</Icon>Map</button>
-          <button className={panel === "feed" ? "active" : ""} onClick={() => setPanel("feed")}><Icon>≡</Icon>Activity</button>
-          <button className="report-button" onClick={() => setReporting(true)}><span>＋</span>Report ducks</button>
-          <button className={panel === "saved" ? "active" : ""} onClick={() => setPanel("saved")}><Icon>♧</Icon>Saved</button>
-          <button><Icon>◌</Icon>More</button>
-        </nav>
-      </section>
-
-      {reporting && <div className="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="report-title">
-        <div className="modal">
-          {sent ? <div className="success"><div>✓</div><h2>Activity shared</h2><p>Your exact location stays private.</p></div> : <>
-            <div className="modal-head"><div><span className="eyebrow">COMMUNITY SIGHTING</span><h2 id="report-title">Report duck activity</h2></div><button onClick={() => setReporting(false)} aria-label="Close">×</button></div>
-            <div className="shield"><span>◉</span><div><b>Your location will be blurred</b><p>Hunters see a randomized 3-mile activity zone—not your pin, route, or blind.</p></div></div>
-            <label>What did you see?</label><div className="choice-grid">{["Mallard","Teal","Gadwall","Mixed ducks"].map(s => <button className={species === s ? "active" : ""} onClick={() => setSpecies(s)} key={s}>{s}</button>)}</div>
-            <label>How many?</label><div className="choice-grid four">{["1–10","10–25","25–50","50+"].map(a => <button className={amount === a ? "active" : ""} onClick={() => setAmount(a)} key={a}>{a}</button>)}</div>
-            <label>What were they doing?</label><select defaultValue="Feeding & circling"><option>Feeding &amp; circling</option><option>Flying over</option><option>Resting on water</option><option>Moving into area</option></select>
-            <button className="share" onClick={submit}>Share protected report <span>→</span></button>
-            <p className="fine">Reports fade after 6 hours. Repeated false reports reduce account trust.</p>
-          </>}
-        </div>
-      </div>}
-    </main>
-  );
+  return <main className="app-shell"><section className="map" aria-label="Duck activity map"><div className="terrain"/><div className="river river-one"/><div className="river river-two"/><div className="road r1"/><div className="road r2"/>
+    <header className="topbar"><div className="brand"><div className="brandmark">F</div><div><strong>FLYWAY</strong><span>DUCK ACTIVITY, NOT HUNTING SPOTS</span></div></div><button className="area"><span><small>LIVE NETWORK</small>Lower Mississippi Flyway</span></button><div className="weather"><span>☁</span><div><b>43°</b><small>NW 12 mph · Rising pressure</small></div></div><button className="avatar" onClick={()=>profile?logout():setAuthOpen(true)} aria-label={profile?"Sign out":"Sign in"}>{profile?.display_name?.slice(0,2).toUpperCase()||"IN"}</button></header>
+    <aside className="filters"><button className="filter active">All ducks</button><button className="filter">Dabblers</button><button className="filter">Divers</button></aside>
+    {reports.map(r=><button key={r.id} onClick={()=>setSelectedId(r.id)} className={`hotspot ${r.color} ${selected?.id===r.id?"selected":""}`} style={{left:`${r.x}%`,top:`${r.y}%`,width:r.size,height:r.size}}><span>{r.flock_size}</span></button>)}
+    {!loading&&!reports.length&&<div className="empty-map"><b>No fresh sightings yet</b><span>Be the first hunter to share protected activity.</span></div>}
+    {selected&&<section className="report-card"><div className="report-head"><div className={`duck-badge ${selected.color}`}>⌁</div><div><span className="eyebrow">LIVE ACTIVITY · {selected.age.toUpperCase()} AGO</span><h2>{labels[selected.species]}</h2></div><div className="confidence"><b>{selected.confidence}%</b><span>CONFIDENCE</span></div></div><div className="stats"><div><span>ESTIMATED FLOCK</span><strong>{selected.flock_size} birds</strong></div><div><span>BEHAVIOR</span><strong>{labels[selected.behavior]}</strong></div><div><span>CONFIRMED</span><strong className="up">{selected.confirmations} hunters</strong></div></div><div className="privacy"><span><b>Location protected</b>This report is displayed as a randomized activity zone. The hunter’s exact spot is never returned.</span></div><div className="confirm"><span>Seen them too?</span><button className="confirm-btn" onClick={confirm}>✓ Confirm activity</button></div></section>}
+    <nav className="bottom-nav"><button className="active"><span className="icon">⌖</span>Map</button><button><span className="icon">≡</span>Activity</button><button className="report-button" onClick={openReport}><span>＋</span>Report ducks</button><button><span className="icon">♧</span>Saved</button><button onClick={()=>profile?logout():setAuthOpen(true)}><span className="icon">◌</span>{profile?"Sign out":"Sign in"}</button></nav>
+  </section>
+  {reporting&&<div className="modal-wrap"><div className="modal"><div className="modal-head"><div><span className="eyebrow">COMMUNITY SIGHTING</span><h2>Report duck activity</h2></div><button onClick={()=>setReporting(false)}>×</button></div><div className="shield"><span>◉</span><div><b>Your location will be blurred</b><p>Hunters receive a randomized activity zone—not your pin, route, or blind.</p></div></div><label>What did you see?</label><div className="choice-grid">{Object.keys(speciesValues).map(s=><button className={species===s?"active":""} onClick={()=>setSpecies(s)} key={s}>{s}</button>)}</div><label>How many?</label><div className="choice-grid four">{Object.keys(amountValues).map(a=><button className={amount===a?"active":""} onClick={()=>setAmount(a)} key={a}>{a}</button>)}</div><label>What were they doing?</label><select value={behavior} onChange={e=>setBehavior(e.target.value)}><option value="feeding">Feeding</option><option value="circling">Circling</option><option value="flying_over">Flying over</option><option value="resting">Resting on water</option><option value="moving_in">Moving into area</option></select><button className="share" onClick={submit}>Share protected report →</button>{status&&<p className="form-status">{status}</p>}</div></div>}
+  {authOpen&&<div className="modal-wrap"><div className="modal auth-modal"><div className="modal-head"><div><span className="eyebrow">HUNTER ACCOUNT</span><h2>{authMode==="login"?"Welcome back":"Join Flyway"}</h2></div><button onClick={()=>setAuthOpen(false)}>×</button></div>{authMode==="signup"&&<><label>Display name</label><input value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Marsh Hunter"/></>}<label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="hunter@example.com"/><label>Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="8 characters minimum"/><button className="share" onClick={authenticate}>{authMode==="login"?"Sign in":"Create account"}</button>{authError&&<p className="form-status error">{authError}</p>}<button className="auth-switch" onClick={()=>setAuthMode(authMode==="login"?"signup":"login")}>{authMode==="login"?"New to Flyway? Create an account":"Already have an account? Sign in"}</button></div></div>}
+  </main>;
 }
