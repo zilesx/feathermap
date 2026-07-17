@@ -5,7 +5,7 @@ services:
     container_name: flyway-api
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3001"
+      - "192.168.0.66:3001:3001"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
