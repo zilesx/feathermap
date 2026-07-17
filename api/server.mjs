@@ -35,6 +35,13 @@ async function body(req) {
   catch { throw Object.assign(new Error("Invalid JSON"), { status: 400 }); }
 }
 
+async function binaryBody(req, max = 5_242_880) {
+  const chunks = []; let size = 0;
+  for await (const chunk of req) { size += chunk.length; if (size > max) throw Object.assign(new Error("Image must be 5 MB or smaller"), { status: 413 }); chunks.push(chunk); }
+  if (!size) throw Object.assign(new Error("Image is required"), { status: 400 });
+  return Buffer.concat(chunks);
+}
+
 function rateLimit(req, max = 60) {
   const ip = req.headers["cf-connecting-ip"] || req.socket.remoteAddress || "unknown";
   const window = Math.floor(Date.now() / 60_000);
@@ -187,8 +194,51 @@ const server = http.createServer(async (req, res) => {
       const rows = await supabase("/rest/v1/sightings", { method: "POST", data: {
         reporter_id: user.id, species: input.species, flock_size: input.flock_size, behavior: input.behavior,
         exact_latitude: latitude, exact_longitude: longitude, accuracy_meters: Math.min(Math.max(Number(input.accuracy_meters) || 0, 0), 10000),
+        notes: typeof input.notes === "string" ? input.notes.trim().slice(0, 1000) || null : null,
       }, prefer: "return=representation" });
       return json(res, 201, { id: rows[0].id, expires_at: rows[0].expires_at }, origin);
+    }
+
+    const photos = url.pathname.match(/^\/api\/sightings\/([0-9a-f-]{36})\/photos$/i);
+    if (photos && req.method === "GET") {
+      const rows = await supabase(`/rest/v1/sighting_media?sighting_id=eq.${photos[1]}&select=id,mime_type,created_at&order=created_at.asc`);
+      return json(res, 200, { photos: rows.map(row => ({ ...row, url: `/api/media/${row.id}` })) }, origin);
+    }
+    if (photos && req.method === "POST") {
+      rateLimit(req, 8); const { user } = await currentUser(req); await ensureProfile(user);
+      const mime = String(req.headers["content-type"] || "").split(";")[0];
+      if (!["image/jpeg","image/png","image/webp"].includes(mime)) throw Object.assign(new Error("Use a JPEG, PNG, or WebP image"), { status: 415 });
+      const owned = await supabase(`/rest/v1/sightings?id=eq.${photos[1]}&reporter_id=eq.${user.id}&select=id`);
+      if (!owned.length) throw Object.assign(new Error("Only the reporting hunter can add photos"), { status: 403 });
+      const bytes = await binaryBody(req); const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg"; const objectPath = `${photos[1]}/${crypto.randomUUID()}.${ext}`;
+      const uploaded = await fetch(`${SUPABASE_URL}/storage/v1/object/sighting-photos/${objectPath}`, { method:"POST", headers:{ apikey:SERVICE_KEY, Authorization:`Bearer ${SERVICE_KEY}`, "Content-Type":mime, "x-upsert":"false" }, body:bytes });
+      if (!uploaded.ok) throw Object.assign(new Error("Photo storage failed"), { status: 502 });
+      const rows = await supabase("/rest/v1/sighting_media", { method:"POST", data:{ sighting_id:photos[1], uploader_id:user.id, object_path:objectPath, mime_type:mime, byte_size:bytes.length }, prefer:"return=representation" });
+      return json(res, 201, { id:rows[0].id, url:`/api/media/${rows[0].id}` }, origin);
+    }
+
+    const comments = url.pathname.match(/^\/api\/sightings\/([0-9a-f-]{36})\/comments$/i);
+    if (comments && req.method === "GET") {
+      const rows = await supabase(`/rest/v1/sighting_comments?sighting_id=eq.${comments[1]}&select=id,commenter_id,body,created_at&order=created_at.asc&limit=100`);
+      const ids = [...new Set(rows.map(row=>row.commenter_id))];
+      const profiles = ids.length ? await supabase(`/rest/v1/profiles?id=in.(${ids.join(",")})&select=id,display_name`) : [];
+      const names = new Map(profiles.map(p=>[p.id,p.display_name]));
+      return json(res, 200, { comments: rows.map(({commenter_id,...row})=>({...row,display_name:names.get(commenter_id)||"Hunter"})) }, origin);
+    }
+    if (comments && req.method === "POST") {
+      rateLimit(req, 20); const { user } = await currentUser(req); await ensureProfile(user); const input = await body(req); const text = typeof input.body === "string" ? input.body.trim() : "";
+      if (!text || text.length > 500) throw Object.assign(new Error("Comment must be between 1 and 500 characters"), { status:400 });
+      await supabase("/rest/v1/sighting_comments", { method:"POST", data:{ sighting_id:comments[1], commenter_id:user.id, body:text }, prefer:"return=minimal" });
+      return json(res, 201, { status:"created" }, origin);
+    }
+
+    const media = url.pathname.match(/^\/api\/media\/([0-9a-f-]{36})$/i);
+    if (media && req.method === "GET") {
+      const rows = await supabase(`/rest/v1/sighting_media?id=eq.${media[1]}&select=object_path,mime_type`);
+      if (!rows.length) throw Object.assign(new Error("Photo not found"), { status:404 });
+      const image = await fetch(`${SUPABASE_URL}/storage/v1/object/sighting-photos/${rows[0].object_path}`, { headers:{ apikey:SERVICE_KEY, Authorization:`Bearer ${SERVICE_KEY}` } });
+      if (!image.ok) throw Object.assign(new Error("Photo not found"), { status:404 });
+      res.writeHead(200, { "Content-Type":rows[0].mime_type, "Cache-Control":"public, max-age=3600", ...cors(origin) }); return res.end(Buffer.from(await image.arrayBuffer()));
     }
 
     const confirmation = url.pathname.match(/^\/api\/sightings\/([0-9a-f-]{36})\/confirm$/i);

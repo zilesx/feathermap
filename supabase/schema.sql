@@ -21,6 +21,7 @@ create table public.sightings (
   species public.bird_species not null,
   flock_size public.flock_band not null,
   behavior public.sighting_behavior not null,
+  notes text check (char_length(notes) <= 1000),
   exact_latitude double precision not null check (exact_latitude between -90 and 90),
   exact_longitude double precision not null check (exact_longitude between -180 and 180),
   accuracy_meters integer check (accuracy_meters between 0 and 10000),
@@ -52,10 +53,15 @@ create table public.flags (
   unique (sighting_id, hunter_id)
 );
 
+create table public.sighting_media (id uuid primary key default gen_random_uuid(), sighting_id uuid not null references public.sightings(id) on delete cascade, uploader_id uuid not null references public.profiles(id) on delete cascade, object_path text not null unique, mime_type text not null check (mime_type in ('image/jpeg','image/png','image/webp')), byte_size integer not null check (byte_size between 1 and 5242880), created_at timestamptz not null default now());
+create table public.sighting_comments (id uuid primary key default gen_random_uuid(), sighting_id uuid not null references public.sightings(id) on delete cascade, commenter_id uuid not null references public.profiles(id) on delete cascade, body text not null check (char_length(body) between 1 and 500), created_at timestamptz not null default now());
+
 alter table public.profiles enable row level security;
 alter table public.sightings enable row level security;
 alter table public.confirmations enable row level security;
 alter table public.flags enable row level security;
+alter table public.sighting_media enable row level security;
+alter table public.sighting_comments enable row level security;
 
 create policy "read own profile" on public.profiles for select using (id = auth.uid());
 create policy "update own profile" on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
@@ -70,7 +76,7 @@ returns table (
   id uuid, species public.bird_species, flock_size public.flock_band,
   behavior public.sighting_behavior, zone_latitude double precision,
   zone_longitude double precision, confidence smallint, occurred_at timestamptz,
-  expires_at timestamptz, confirmations bigint
+  expires_at timestamptz, confirmations bigint, notes text
 )
 language sql
 security definer
@@ -79,7 +85,7 @@ as $$
   select s.id, s.species, s.flock_size, s.behavior,
     round((s.exact_latitude + (((('x' || substr(md5(s.id::text || ':lat'), 1, 8))::bit(32)::bigint % 1000) / 1000.0) - .5) * .06)::numeric, 3)::double precision,
     round((s.exact_longitude + (((('x' || substr(md5(s.id::text || ':lng'), 1, 8))::bit(32)::bigint % 1000) / 1000.0) - .5) * .08)::numeric, 3)::double precision,
-    s.confidence, s.occurred_at, s.expires_at, count(c.hunter_id)
+    s.confidence, s.occurred_at, s.expires_at, count(c.hunter_id), s.notes
   from public.sightings s
   left join public.confirmations c on c.sighting_id = s.id
   where s.status = 'active' and s.occurred_at >= greatest(p_since, now() - interval '90 days')
@@ -93,3 +99,5 @@ grant execute on function public.nearby_sightings(integer, timestamptz) to anon,
 
 -- Raw sightings are intentionally unavailable to anon/authenticated users.
 revoke select (exact_latitude, exact_longitude, accuracy_meters) on public.sightings from anon, authenticated;
+revoke all on public.sighting_media from anon, authenticated;
+revoke all on public.sighting_comments from anon, authenticated;
