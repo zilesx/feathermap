@@ -5,6 +5,7 @@ import "./security.css";
 import "./admin-settings.css";
 import "./trust-features.css";
 import "./content-tools.css";
+import "./location-tools.css";
 
 export const metadata: Metadata = {
   title: "Flyway — Private Duck Activity",
