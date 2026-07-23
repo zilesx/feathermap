@@ -20,7 +20,7 @@ const colors: Record<string,string> = { mallard:"green",teal:"blue",mixed:"gold"
 const speciesValues: Record<string,string> = { Mallard:"mallard",Teal:"teal",Gadwall:"gadwall",Pintail:"pintail","Mixed ducks":"mixed","Canada goose":"canada_goose","Snow goose":"snow_goose","White-fronted goose":"white_fronted_goose","Sandhill crane":"sandhill_crane","Tundra swan":"tundra_swan" };
 const geese=new Set(["canada_goose","snow_goose","white_fronted_goose","tundra_swan"]);
 const allGroups=["ducks","geese","cranes","doves","shorebirds","upland","other"];
-const defaultPreferences:Preferences={visible_groups:allGroups,default_days:7,start_view:"us",auto_open_card:true,appearance:"system",map_view:"density",reduced_map_motion:false,colorblind_map:false};
+const defaultPreferences:Preferences={visible_groups:allGroups,default_days:180,start_view:"us",auto_open_card:true,appearance:"system",map_view:"density",reduced_map_motion:false,colorblind_map:false};
 const mapViewLabels:Record<MapView,string>={density:"Activity density"};
 function birdGroup(species:string){return species==="sandhill_crane"?"cranes":geese.has(species)?"geese":"ducks";}
 const amountValues: Record<string,string> = { "1–10":"1-10","10–25":"10-25","25–50":"25-50","50+":"50+" };
@@ -40,7 +40,7 @@ export default function Home(){
   const [panel,setPanel]=useState<Panel>("map");
   const [filter,setFilter]=useState<Filter>("all");
   const [catalog,setCatalog]=useState<CatalogSpecies[]>([]); const [categories,setCategories]=useState<CatalogCategory[]>([]);
-  const [timeDays,setTimeDays]=useState(7);
+  const [timeDays,setTimeDays]=useState(180);
   const [customRange,setCustomRange]=useState({start:"",end:""});const[locationOpen,setLocationOpen]=useState(false);const[popularLocations,setPopularLocations]=useState<any[]>([]);const[savedLocations,setSavedLocations]=useState<any[]>([]);
   const [savedIds,setSavedIds]=useState<string[]>([]);
   const [detailId,setDetailId]=useState("");
@@ -83,7 +83,7 @@ export default function Home(){
   useEffect(()=>{ const resize=()=>setViewport({width:window.innerWidth,height:window.innerHeight});resize();window.addEventListener("resize",resize);setSavedIds(JSON.parse(localStorage.getItem("flyway_saved")||"[]")); const saved=localStorage.getItem("flyway_session"); if(saved){ const s=JSON.parse(saved); setToken(s.access_token); request("/api/profile",{headers:{Authorization:`Bearer ${s.access_token}`}}).then(p=>{setProfile(p);applyPreferences(p.preferences||defaultPreferences);}).catch(()=>localStorage.removeItem("flyway_session")); } return()=>window.removeEventListener("resize",resize); },[]);
   useEffect(()=>{setLoading(true);load();},[timeDays,customRange.start,customRange.end]);
   useEffect(()=>{request("/api/catalog").then(data=>{setCatalog(data.species||[]);setCategories(data.categories||[]);}).catch(()=>{});},[]);
-  useEffect(()=>{if(zoom>5){setHeatCells([]);return}request(`/api/map/heatmap?${rangeQuery()}`).then(data=>setHeatCells(data.cells||[])).catch(()=>setHeatCells([]));},[zoom<=5,timeDays,customRange.start,customRange.end]);
+  useEffect(()=>{if(zoom>5){setHeatCells([]);return}request(`/api/map/heatmap?${rangeQuery()}&zoom=${zoom.toFixed(1)}`).then(data=>setHeatCells(data.cells||[])).catch(()=>setHeatCells([]));},[Math.floor(zoom*2),timeDays,customRange.start,customRange.end]);
   useEffect(()=>{if(!detailId)return;Promise.all([request(`/api/sightings/${detailId}/photos`),request(`/api/sightings/${detailId}/comments`)]).then(([p,c])=>{setPhotos(p.photos||[]);setComments(c.comments||[]);}).catch(()=>{setPhotos([]);setComments([]);});},[detailId]);
   useEffect(()=>{if(!selectedId||!token){setConfirmationState({confirmed:false,own_report:false,loading:false});return}setConfirmationState(s=>({...s,loading:true,error:undefined}));request(`/api/sightings/${selectedId}/confirmation-state`,{headers:{Authorization:`Bearer ${token}`}}).then(s=>setConfirmationState({...s,loading:false})).catch(e=>setConfirmationState({confirmed:false,own_report:false,loading:false,error:e instanceof Error?e.message:"Could not load confirmation"}))},[selectedId,token]);
   useEffect(()=>{document.querySelectorAll<HTMLButtonElement>(".confirm-btn").forEach(button=>{button.disabled=confirmationState.confirmed||confirmationState.own_report||confirmationState.loading;button.textContent=confirmationState.loading?"Checking…":confirmationState.confirmed?"✓ Confirmed":confirmationState.own_report?"Your report":"✓ Confirm activity";button.title=confirmationState.error||""})},[confirmationState,detailId,cardOpen]);
@@ -93,7 +93,7 @@ export default function Home(){
   function showReport(id:string){ setSelectedId(id); setCardOpen(true); setDetailId(id); setPanel("map"); }
   function selectReport(id:string){ setSelectedId(id); setCardOpen(true); setDetailId(""); setPanel("map"); }
   function openDetail(id:string){ setSelectedId(id); setCardOpen(true); setDetailId(id); }
-  function applyPreferences(next:Preferences){setPreferences(next);setMapView("density");setTimeDays(next.default_days);if(next.start_view==="world"){setZoom(2);setCenter({lat:20,lon:0});}else if(next.start_view==="my_area")locateMe();else resetMap();}
+  function applyPreferences(next:Preferences){setPreferences(next);setMapView("density");setTimeDays(180);if(next.start_view==="world"){setZoom(2);setCenter({lat:20,lon:0});}else if(next.start_view==="my_area")locateMe();else resetMap();}
   async function savePreferences(next:Preferences){setPreferences(next);setPreferencesStatus("Saving…");try{const data=await request("/api/profile",{method:"PATCH",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({preferences:next})});applyPreferences(data.preferences);setPreferencesStatus("Saved");setTimeout(()=>setPreferencesStatus(""),1200);}catch(e){setPreferencesStatus(e instanceof Error?e.message:"Could not save preferences");}}
   function changeZoom(amount:number){ setZoom(current=>Math.min(15,Math.max(2,current+amount))); }
   function mapPointerDown(event:ReactPointerEvent<HTMLDivElement>){if(event.pointerType==="mouse"&&event.button!==0)return;if(pointers.current.size===0)mapGesture.current=false;const reportTarget=(event.target as HTMLElement).closest<HTMLElement>("[data-report-id]");pendingReportTap.current=reportTarget?{id:reportTarget.dataset.reportId!,x:event.clientX,y:event.clientY,pointerId:event.pointerId}:null;if(!reportTarget)setCardOpen(false);event.currentTarget.setPointerCapture(event.pointerId);pointers.current.set(event.pointerId,{x:event.clientX,y:event.clientY});if(pointers.current.size===1){const p=project(center.lat,center.lon,zoom);drag.current={pointerX:event.clientX,pointerY:event.clientY,centerX:p.x,centerY:p.y};pinch.current=null;}else if(pointers.current.size===2){mapGesture.current=true;pendingReportTap.current=null;const [a,b]=[...pointers.current.values()];const midX=(a.x+b.x)/2,midY=(a.y+b.y)/2;const p=project(center.lat,center.lon,zoom);pinch.current={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom,worldX:p.x+midX-viewport.width/2,worldY:p.y+midY-viewport.height/2};drag.current=null;}}

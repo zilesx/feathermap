@@ -23,7 +23,7 @@ function cors(origin) {
 }
 
 function json(res, status, body, origin) {
-  res.writeHead(status, { "Content-Type": "application/json", ...cors(origin) });
+  res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store", ...cors(origin) });
   res.end(JSON.stringify(body));
 }
 
@@ -159,12 +159,12 @@ function validateSighting(input) {
 }
 
 const preferenceGroups = ["ducks", "geese", "cranes", "doves", "shorebirds", "upland", "other"];
-const defaultPreferences = { visible_groups: preferenceGroups, default_days: 7, start_view: "us", auto_open_card: true, appearance: "system", map_view: "density", reduced_map_motion: false, colorblind_map: false };
+const defaultPreferences = { visible_groups: preferenceGroups, default_days: 180, start_view: "us", auto_open_card: true, appearance: "system", map_view: "density", reduced_map_motion: false, colorblind_map: false };
 function validatePreferences(input = {}) {
   const groups = Array.isArray(input.visible_groups) ? input.visible_groups.filter(v => preferenceGroups.includes(v)) : defaultPreferences.visible_groups;
   return {
     visible_groups: [...new Set(groups)],
-    default_days: [1, 7, 30, 90].includes(Number(input.default_days)) ? Number(input.default_days) : 7,
+    default_days: [1, 7, 30, 90, 180, 365].includes(Number(input.default_days)) ? Number(input.default_days) : 180,
     start_view: ["us", "world", "my_area"].includes(input.start_view) ? input.start_view : "us",
     auto_open_card: input.auto_open_card !== false,
     appearance: ["system", "dark", "light"].includes(input.appearance) ? input.appearance : "system",
@@ -286,7 +286,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if(req.method==="GET"&&url.pathname==="/api/map/heatmap"){
-      rateLimit(req,120);const mapConfig=await configValue("map_layers",{minimum_heat_reports:3,grid_degrees:4});const range=requestedRange(url,7);const rows=await supabase("/rest/v1/rpc/activity_heatmap",{method:"POST",token:ANON_KEY,data:{p_since:range.start.toISOString(),p_grid_degrees:Math.max(2,Number(mapConfig.grid_degrees)||4),p_minimum:Math.max(3,Number(mapConfig.minimum_heat_reports)||3)}});return json(res,200,{cells:rows,range},origin);
+      rateLimit(req,120);const mapConfig=await configValue("map_layers",{minimum_heat_reports:3,grid_degrees:4});const range=requestedRange(url,180);const zoom=Math.max(2,Math.min(7,Number(url.searchParams.get("zoom"))||3));const adaptiveGrid=zoom<3?6:zoom<4?4:zoom<5?2:zoom<6?1:.5;const configuredGrid=Number(mapConfig.grid_degrees);const grid=Number.isFinite(configuredGrid)&&configuredGrid>0?Math.min(configuredGrid,adaptiveGrid):adaptiveGrid;const rows=await supabase("/rest/v1/rpc/activity_heatmap",{method:"POST",token:ANON_KEY,data:{p_since:range.start.toISOString(),p_grid_degrees:grid,p_minimum:Math.max(3,Number(mapConfig.minimum_heat_reports)||3)}});return json(res,200,{cells:rows,range,grid_degrees:grid},origin);
     }
 
     if (req.method === "GET" && url.pathname === "/api/catalog") {
@@ -403,7 +403,7 @@ const server = http.createServer(async (req, res) => {
         supabase("/rest/v1/sightings?status=eq.removed&deleted_at=not.is.null&select=id,reporter_id,species_slug,flock_size,occurred_at,deleted_at&order=deleted_at.desc&limit=8")
       ]);
       const ids=[...new Set([...failures.map(v=>v.user_id),...recentActions.map(v=>v.actor_id),...deleted.map(v=>v.reporter_id)].filter(Boolean))],profiles=ids.length?await supabase(`/rest/v1/profiles?id=in.(${ids.join(",")})&select=id,first_name,last_name,display_name,role`):[],names=new Map(profiles.map(p=>[p.id,{name:[p.first_name,p.last_name].filter(Boolean).join(" ")||p.display_name||"Unknown user",role:p.role||"user"}]));
-      return json(res,200,{attention:{moderation:cases,security:failures.map(v=>({...v,user:names.get(v.user_id)||null})),suspended,recent_actions:recentActions.map(v=>({...v,actor:names.get(v.actor_id)||null})),deleted_reports:deleted.map(v=>({...v,reporter:names.get(v.reporter_id)||null}))}});
+      return json(res,200,{attention:{moderation:cases,security:failures.map(v=>({...v,user:names.get(v.user_id)||null})),suspended,recent_actions:recentActions.map(v=>({...v,actor:names.get(v.actor_id)||null})),deleted_reports:deleted.map(v=>({...v,reporter:names.get(v.reporter_id)||null}))}},origin);
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/users") {

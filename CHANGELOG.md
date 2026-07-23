@@ -1,5 +1,14 @@
 # FeatherMap changelog
 
+## 2026-07-23 — Admin CORS correction and scalable national activity
+
+- Corrected the successful admin-overview response so it includes the requesting production origin, fixing the misleading browser `Failed to fetch` error on authenticated admin pages.
+- Marked API JSON responses as non-cacheable to prevent authenticated or administrative responses from being retained by browsers or edge caches.
+- Temporarily changed the initial map timeframe to six months for migration-data testing.
+- Replaced fixed nationwide aggregation with zoom-adaptive privacy cells and compact point groups that gain detail as the map zooms in.
+- Added regression coverage for authenticated CORS, aggregation scaling, the temporary timeframe, and FeatherMap favicon metadata.
+- Replaced the generic starter favicon with the FeatherMap feather mark.
+
 ## 2026-07-22 — FeatherMap product rebrand
 
 - Renamed the product from Flyway to FeatherMap across the primary map, account, authentication, recovery, administration, metadata, API messaging, tests, and documentation.

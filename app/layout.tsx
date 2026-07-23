@@ -12,6 +12,7 @@ import "./map-radar.css";
 export const metadata: Metadata = {
   title: "FeatherMap — Private Migratory Bird Activity",
   description: "Share fresh migratory bird activity without giving away your exact location.",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
