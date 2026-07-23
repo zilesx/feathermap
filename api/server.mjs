@@ -159,7 +159,8 @@ function validateSighting(input) {
 }
 
 const preferenceGroups = ["ducks", "geese", "cranes", "doves", "shorebirds", "upland", "other"];
-const defaultPreferences = { visible_groups: preferenceGroups, default_days: 7, start_view: "us", auto_open_card: true, appearance: "system" };
+const mapViews = ["category", "splatter", "weather", "hexbin", "dominance", "clusters"];
+const defaultPreferences = { visible_groups: preferenceGroups, default_days: 7, start_view: "us", auto_open_card: true, appearance: "system", map_view: "category", reduced_map_motion: false, colorblind_map: false };
 function validatePreferences(input = {}) {
   const groups = Array.isArray(input.visible_groups) ? input.visible_groups.filter(v => preferenceGroups.includes(v)) : defaultPreferences.visible_groups;
   return {
@@ -168,6 +169,9 @@ function validatePreferences(input = {}) {
     start_view: ["us", "world", "my_area"].includes(input.start_view) ? input.start_view : "us",
     auto_open_card: input.auto_open_card !== false,
     appearance: ["system", "dark", "light"].includes(input.appearance) ? input.appearance : "system",
+    map_view: mapViews.includes(input.map_view) ? input.map_view : "category",
+    reduced_map_motion: input.reduced_map_motion === true,
+    colorblind_map: input.colorblind_map === true,
   };
 }
 

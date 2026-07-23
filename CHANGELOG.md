@@ -1,5 +1,14 @@
 # Flyway changelog
 
+## 2026-07-22 — Configurable activity-map visualizations
+
+- Preserved the existing category heatmap as the default visualization.
+- Added Splatter, Weather, Hexbin, Species Dominance, and Activity Cluster views using the same privacy-aggregated map data.
+- Added an unobtrusive map-view selector for temporary changes without altering account defaults.
+- Added profile-synchronized default visualization, reduced-motion, and colorblind-safe map preferences.
+- Added adaptive legends and responsive controls for desktop and mobile layouts.
+- Extended API preference validation so unsupported visualization values cannot be stored.
+
 ## 2026-07-22 — Light-theme map contrast correction
 
 - Kept map-overlay controls on an opaque dark surface in Light and System-Light modes so labels remain readable over bright map tiles.
