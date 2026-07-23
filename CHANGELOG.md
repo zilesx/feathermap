@@ -142,6 +142,17 @@ This changelog is organized around explicit product build approvals and major de
 - Added a low, moderate, high, and intense activity scale plus a compact bird-category key.
 - Simplified map controls, clusters, and close-zoom markers with solid high-contrast surfaces and restrained selection states.
 - Preserved privacy-safe aggregation, reduced-motion behavior, and colorblind-friendly map preferences.
+
+## 2026-07-22 — Density map, actionable administration, and owner deletion
+
+- Replaced zoomed-out bubble and alternate aggregate modes with compact red density points representing privacy-safe aggregate cells.
+- Separated timeframe controls from bird-category filters and retained close-zoom report markers.
+- Moved System, Light, and Dark appearance selection into Edit Profile and removed floating preference overlays.
+- Added owner-authorized soft deletion for activity reports, immediate removal from public views, audit history, and a 30-day administrator restore path.
+- Replaced generic admin totals with actionable moderation, security, suspended-account, deleted-report, and recent-staff-action sections.
+- Enriched audit records with readable actors, targets, action labels, device summaries, field changes, and collapsed technical identifiers.
+- Resized moderation controls for desktop and mobile and clearly marked submitted content as read-only.
+- Added `migrate_owner_report_deletion.sql`.
 - Added species visibility preferences and administrative catalog controls.
 
 ## 2026-07-17 — Live API, authentication, and RBAC

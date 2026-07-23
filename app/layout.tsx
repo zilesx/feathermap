@@ -8,7 +8,6 @@ import "./content-tools.css";
 import "./location-tools.css";
 import "./theme.css";
 import "./map-radar.css";
-import AppearanceControl from "./appearance-control";
 
 export const metadata: Metadata = {
   title: "FeatherMap — Private Migratory Bird Activity",
@@ -17,5 +16,5 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const themeScript=`(()=>{try{document.documentElement.dataset.theme=localStorage.getItem('flyway_appearance')||'system'}catch{document.documentElement.dataset.theme='system'}})()`;
-  return <html lang="en" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:themeScript}}/></head><body>{children}<AppearanceControl/></body></html>;
+  return <html lang="en" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:themeScript}}/></head><body>{children}</body></html>;
 }

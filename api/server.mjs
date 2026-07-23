@@ -17,7 +17,7 @@ function cors(origin) {
   return {
     ...(allowed ? { "Access-Control-Allow-Origin": allowed } : {}),
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Vary": "Origin",
   };
 }
@@ -159,8 +159,7 @@ function validateSighting(input) {
 }
 
 const preferenceGroups = ["ducks", "geese", "cranes", "doves", "shorebirds", "upland", "other"];
-const mapViews = ["category", "splatter", "weather", "hexbin", "dominance", "clusters"];
-const defaultPreferences = { visible_groups: preferenceGroups, default_days: 7, start_view: "us", auto_open_card: true, appearance: "system", map_view: "category", reduced_map_motion: false, colorblind_map: false };
+const defaultPreferences = { visible_groups: preferenceGroups, default_days: 7, start_view: "us", auto_open_card: true, appearance: "system", map_view: "density", reduced_map_motion: false, colorblind_map: false };
 function validatePreferences(input = {}) {
   const groups = Array.isArray(input.visible_groups) ? input.visible_groups.filter(v => preferenceGroups.includes(v)) : defaultPreferences.visible_groups;
   return {
@@ -169,7 +168,7 @@ function validatePreferences(input = {}) {
     start_view: ["us", "world", "my_area"].includes(input.start_view) ? input.start_view : "us",
     auto_open_card: input.auto_open_card !== false,
     appearance: ["system", "dark", "light"].includes(input.appearance) ? input.appearance : "system",
-    map_view: mapViews.includes(input.map_view) ? input.map_view : "category",
+    map_view: "density",
     reduced_map_motion: input.reduced_map_motion === true,
     colorblind_map: input.colorblind_map === true,
   };
@@ -318,6 +317,14 @@ const server = http.createServer(async (req, res) => {
       return json(res, 201, { id: rows[0].id, expires_at: rows[0].expires_at }, origin);
     }
 
+    const ownedSighting=url.pathname.match(/^\/api\/sightings\/([0-9a-f-]{36})$/i);
+    if(req.method==="DELETE"&&ownedSighting){
+      rateLimit(req,10);const{user}=await activeUser(req);const rows=await supabase(`/rest/v1/sightings?id=eq.${ownedSighting[1]}&reporter_id=eq.${user.id}&status=neq.removed&select=id,species_slug,flock_size,behavior,status,occurred_at`);
+      if(!rows.length)throw Object.assign(new Error("Report not found or you do not own it"),{status:404});
+      const now=new Date().toISOString();await supabase(`/rest/v1/sightings?id=eq.${ownedSighting[1]}&reporter_id=eq.${user.id}`,{method:"PATCH",data:{status:"removed",deleted_at:now,deleted_by:user.id},prefer:"return=minimal"});
+      await userActivity(req,user.id,"sighting.delete","sighting",ownedSighting[1],"success",rows[0],{status:"removed",deleted_at:now});return json(res,200,{message:"Activity report deleted",recoverable_until:new Date(Date.now()+30*86400000).toISOString()},origin);
+    }
+
     const photos = url.pathname.match(/^\/api\/sightings\/([0-9a-f-]{36})\/photos$/i);
     if (photos && req.method === "GET") {
       const rows = await supabase(`/rest/v1/sighting_media?sighting_id=eq.${photos[1]}&select=id,mime_type,created_at&order=created_at.asc`);
@@ -388,8 +395,15 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/admin/overview") {
       await requireRole(req,["moderator","admin"]);
-      const [users,active,flags,speciesRows]=await Promise.all([supabase("/rest/v1/profiles?select=id,role,suspended_until"),supabase("/rest/v1/sightings?status=eq.active&select=id"),supabase("/rest/v1/flags?resolved_at=is.null&select=id"),supabase("/rest/v1/species_catalog?select=slug,enabled")]);
-      return json(res,200,{users:users.length,active_sightings:active.length,open_flags:flags.length,enabled_species:speciesRows.filter(row=>row.enabled).length},origin);
+      const [cases,failures,suspended,recentActions,deleted]=await Promise.all([
+        supabase("/rest/v1/moderation_cases?status=in.(open,assigned,escalated,needs_info)&select=id,content_type,reason,status,created_at&order=created_at.asc&limit=8"),
+        supabase("/rest/v1/security_events?outcome=neq.success&select=id,user_id,event_type,outcome,created_at&order=created_at.desc&limit=8"),
+        supabase(`/rest/v1/profiles?suspended_until=gt.${encodeURIComponent(new Date().toISOString())}&select=id,first_name,last_name,display_name,role,suspended_until&order=suspended_until.asc&limit=8`),
+        supabase("/rest/v1/admin_audit_log?select=id,actor_id,action,target_type,target_id,created_at&order=created_at.desc&limit=8"),
+        supabase("/rest/v1/sightings?status=eq.removed&deleted_at=not.is.null&select=id,reporter_id,species_slug,flock_size,occurred_at,deleted_at&order=deleted_at.desc&limit=8")
+      ]);
+      const ids=[...new Set([...failures.map(v=>v.user_id),...recentActions.map(v=>v.actor_id),...deleted.map(v=>v.reporter_id)].filter(Boolean))],profiles=ids.length?await supabase(`/rest/v1/profiles?id=in.(${ids.join(",")})&select=id,first_name,last_name,display_name,role`):[],names=new Map(profiles.map(p=>[p.id,{name:[p.first_name,p.last_name].filter(Boolean).join(" ")||p.display_name||"Unknown user",role:p.role||"user"}]));
+      return json(res,200,{attention:{moderation:cases,security:failures.map(v=>({...v,user:names.get(v.user_id)||null})),suspended,recent_actions:recentActions.map(v=>({...v,actor:names.get(v.actor_id)||null})),deleted_reports:deleted.map(v=>({...v,reporter:names.get(v.reporter_id)||null}))}});
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/users") {
@@ -428,6 +442,8 @@ const server = http.createServer(async (req, res) => {
       const {user}=await requireRole(req,["moderator","admin"]); const input=await body(req); if(!["active","flagged","removed"].includes(input.status))throw Object.assign(new Error("Invalid moderation status"),{status:400});
       await supabase(`/rest/v1/sightings?id=eq.${moderate[1]}`,{method:"PATCH",data:{status:input.status},prefer:"return=minimal"});await supabase(`/rest/v1/flags?sighting_id=eq.${moderate[1]}&resolved_at=is.null`,{method:"PATCH",data:{resolved_at:new Date().toISOString(),resolved_by:user.id},prefer:"return=minimal"}); await audit(user.id,"sighting.moderate","sighting",moderate[1],{status:input.status}); return json(res,200,{status:"updated"},origin);
     }
+    const restoreSighting=url.pathname.match(/^\/api\/admin\/sightings\/([0-9a-f-]{36})\/restore$/i);
+    if(req.method==="POST"&&restoreSighting){const{user}=await requireRole(req,["admin"]);const rows=await supabase(`/rest/v1/sightings?id=eq.${restoreSighting[1]}&status=eq.removed&deleted_at=not.is.null&select=id,deleted_at`);if(!rows.length)throw Object.assign(new Error("Deleted report not found"),{status:404});if(Date.now()-new Date(rows[0].deleted_at).getTime()>30*86400000)throw Object.assign(new Error("The recovery period has expired"),{status:410});await supabase(`/rest/v1/sightings?id=eq.${restoreSighting[1]}`,{method:"PATCH",data:{status:"active",deleted_at:null,deleted_by:null},prefer:"return=minimal"});await auditRequest(req,user.id,"sighting.restore","sighting",restoreSighting[1],{previous_status:"removed"});return json(res,200,{message:"Report restored"},origin)}
 
     if (req.method === "GET" && url.pathname === "/api/admin/species") {
       await requireRole(req,["moderator","admin"]); const [categories,catalog]=await Promise.all([supabase("/rest/v1/bird_categories?select=*&order=sort_order.asc"),supabase("/rest/v1/species_catalog?select=*&order=category_slug.asc,sort_order.asc")]); return json(res,200,{categories,species:catalog},origin);
@@ -451,7 +467,12 @@ const server = http.createServer(async (req, res) => {
       await supabase(`/rest/v1/app_config?key=eq.${adminConfig[1]}`,{method:"PATCH",data:{value:input.value,updated_by:user.id,updated_at:new Date().toISOString()},prefer:"return=minimal"});await audit(user.id,"config.update","config",adminConfig[1],input.value);return json(res,200,{status:"updated"},origin);
     }
     if (req.method === "GET" && url.pathname === "/api/admin/audit") {
-      await requireRole(req,["admin"]);const rows=await supabase("/rest/v1/admin_audit_log?select=id,actor_id,action,target_type,target_id,details,created_at&order=created_at.desc&limit=200");const actorIds=[...new Set(rows.map(r=>r.actor_id).filter(Boolean))],profiles=actorIds.length?await supabase(`/rest/v1/profiles?id=in.(${actorIds.join(",")})&select=id,display_name,first_name,last_name`):[];const names=new Map(profiles.map(p=>[p.id,p.display_name||[p.first_name,p.last_name].filter(Boolean).join(" ")||"Unknown user"]));const comments=rows.filter(r=>r.target_type==="comment"&&/^[0-9a-f-]{36}$/i.test(r.target_id)).map(r=>r.target_id),commentRows=comments.length?await supabase(`/rest/v1/sighting_comments?id=in.(${comments.join(",")})&select=id,body`):[];const commentText=new Map(commentRows.map(c=>[c.id,c.body]));return json(res,200,{audit:rows.map(row=>({...row,actor_name:names.get(row.actor_id)||"System",target_summary:row.target_type==="comment"?(commentText.get(row.target_id)?.slice(0,160)||"Deleted comment"):row.details?.display_name||row.details?.reason||row.details?.status||null}))},origin);
+      await requireRole(req,["admin"]);const rows=await supabase("/rest/v1/admin_audit_log?select=id,actor_id,action,target_type,target_id,details,created_at&order=created_at.desc&limit=200");
+      const actorIds=[...new Set(rows.map(r=>r.actor_id).filter(Boolean))],profiles=actorIds.length?await supabase(`/rest/v1/profiles?id=in.(${actorIds.join(",")})&select=id,display_name,first_name,last_name,role`):[],auth=await authAdmin("/users?page=1&per_page=1000"),emails=new Map((auth.users||[]).map(v=>[v.id,v.email])),actors=new Map(profiles.map(p=>[p.id,{name:[p.first_name,p.last_name].filter(Boolean).join(" ")||p.display_name||"Unknown user",email:emails.get(p.id)||null,role:p.role||"user"}]));
+      const targetIds=rows.filter(r=>/^[0-9a-f-]{36}$/i.test(r.target_id)).map(r=>r.target_id),profileTargets=targetIds.length?await supabase(`/rest/v1/profiles?id=in.(${targetIds.join(",")})&select=id,display_name,first_name,last_name`):[],commentTargets=targetIds.length?await supabase(`/rest/v1/sighting_comments?id=in.(${targetIds.join(",")})&select=id,body,sighting_id`):[],sightingTargets=targetIds.length?await supabase(`/rest/v1/sightings?id=in.(${targetIds.join(",")})&select=id,species_slug,flock_size,occurred_at,reporter_id`):[];
+      const targets=new Map([...profileTargets.map(v=>[v.id,{label:[v.first_name,v.last_name].filter(Boolean).join(" ")||v.display_name||"User",kind:"User profile"}]),...commentTargets.map(v=>[v.id,{label:`“${String(v.body||"Deleted comment").slice(0,120)}”`,kind:"Comment"}]),...sightingTargets.map(v=>[v.id,{label:`${String(v.species_slug).replaceAll("_"," ")} · ${v.flock_size} · ${new Date(v.occurred_at).toLocaleDateString("en-US")}`,kind:"Activity report"}])]);
+      const labels={"user_activity.view":"Viewed user activity","profile.update":"Updated profile","user.update":"Updated user","user.mfa_reset":"Reset user MFA","user.recovery_requested":"Requested password recovery","moderation.view":"Viewed moderation case","moderation.resolve":"Resolved moderation case","sighting.moderate":"Moderated activity report","sighting.restore":"Restored deleted report","species.create":"Created species","species.update":"Updated species","config.update":"Updated configuration","duplicate.review":"Reviewed possible duplicate"};
+      return json(res,200,{audit:rows.map(row=>({...row,action_label:labels[row.action]||row.action.replaceAll(/[._]/g," ").replace(/\b\w/g,c=>c.toUpperCase()),actor:actors.get(row.actor_id)||{name:"System",email:null,role:"system"},target:targets.get(row.target_id)||{label:row.details?.display_name||row.details?.reason||row.details?.status||row.target_type.replaceAll("_"," "),kind:row.target_type.replaceAll("_"," ")}}))},origin);
     }
 
     return json(res, 404, { error: "Not found" }, origin);
