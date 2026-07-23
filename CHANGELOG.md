@@ -1,5 +1,15 @@
 # Flyway changelog
 
+## 2026-07-22 — Moderation workspace, appearance themes, and stable activity map
+
+- Redesigned the moderation queue around reporter context, content previews, risk signals, assignment and date filters, and historical status filtering.
+- Added an auditable moderation detail view with report reasons, user trust context, attachments, related activity, duplicate signals, decision history, internal notes, and reason-required actions.
+- Preserved protected-location guarantees by excluding exact coordinates from moderation responses.
+- Added profile-synchronized System, Dark, and Light appearance preferences with immediate application and startup theme restoration.
+- Stabilized report clusters by anchoring membership to geographic world coordinates and discrete zoom levels instead of viewport-relative rounding.
+- Replaced low-contrast heatmap pastels with a high-visibility category palette for ducks, geese, cranes, doves, shorebirds, upland birds, and other activity.
+- Added a heatmap category legend and represented activity strength through cell size and brightness while retaining aggregation privacy thresholds.
+
 ## 2026-07-19 — Administrator user activity and map report selection
 
 - Added a dedicated administrator-only Activity section to user details with action, outcome, and date filters plus paginated history.

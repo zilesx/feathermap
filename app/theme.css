@@ -1,0 +1,12 @@
+:root{color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light;--ink:#172019;--muted:#56645a;--panel:#f7faf5;--green:#527d00;--line:#bdc9bd}
+@media(prefers-color-scheme:light){:root[data-theme="system"]{color-scheme:light;--ink:#172019;--muted:#56645a;--panel:#f7faf5;--green:#527d00;--line:#bdc9bd}}
+:root[data-theme="light"] body,:root[data-theme="light"] .admin-page{background:#e9eee8;color:#172019}
+:root[data-theme="light"] .content-panel,:root[data-theme="light"] .report-card,:root[data-theme="light"] .modal,:root[data-theme="light"] .admin-card,:root[data-theme="light"] .admin-detail,:root[data-theme="light"] .admin-sidebar,:root[data-theme="light"] .admin-workspace{background:#f7faf5;color:#172019;border-color:#aebcae}
+:root[data-theme="light"] .bottom-nav,:root[data-theme="light"] .topbar{background:#f5f8f2ed;color:#172019}
+:root[data-theme="light"] .tile-layer{filter:saturate(.72) brightness(.94) contrast(1.03)}
+:root[data-theme="light"] input,:root[data-theme="light"] select,:root[data-theme="light"] textarea,:root[data-theme="light"] .preference-toggles button,:root[data-theme="light"] .detail-hero,:root[data-theme="light"] .comments-head{background:#edf2eb!important;color:#172019!important;border-color:#aebcae!important}
+.appearance-control{display:none;position:fixed;z-index:19;left:50%;bottom:142px;transform:translateX(-50%);width:min(520px,calc(100% - 44px));align-items:center;justify-content:space-between;gap:18px;padding:13px 16px;background:#141d17;border:1px solid #3c493f;border-radius:10px;box-shadow:0 14px 45px #0008;text-align:left}.appearance-control span b,.appearance-control span small{display:block}.appearance-control span b{font-size:11px}.appearance-control span small{margin-top:3px;color:var(--muted);font-size:9px}.appearance-control select{min-width:150px;color:var(--ink)}
+body:has(.account-card) .appearance-control{display:flex}
+:root[data-theme="light"] .appearance-control{background:#f7faf5;border-color:#aebcae;box-shadow:0 14px 45px #24322438}
+@media(max-width:520px){.appearance-control{bottom:139px;flex-direction:column;align-items:stretch}.appearance-control select{width:100%}}

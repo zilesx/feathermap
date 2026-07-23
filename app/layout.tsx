@@ -6,6 +6,8 @@ import "./admin-settings.css";
 import "./trust-features.css";
 import "./content-tools.css";
 import "./location-tools.css";
+import "./theme.css";
+import AppearanceControl from "./appearance-control";
 
 export const metadata: Metadata = {
   title: "Flyway — Private Duck Activity",
@@ -13,5 +15,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  const themeScript=`(()=>{try{document.documentElement.dataset.theme=localStorage.getItem('flyway_appearance')||'system'}catch{document.documentElement.dataset.theme='system'}})()`;
+  return <html lang="en" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:themeScript}}/></head><body>{children}<AppearanceControl/></body></html>;
 }
