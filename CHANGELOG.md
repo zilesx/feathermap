@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-07-23 — Unified themes, catalog setup, and readable administration
+
+- Unified Light, Dark, and System appearance values across the map, account surfaces, dialogs, administration, forms, tables, and moderation workspace.
+- Removed delayed color transitions so changing appearance updates the interface immediately.
+- Replaced the species-only administrative experience with Catalog Setup for categories and species.
+- Added category creation and editing for display name, color, icon label, order, visibility, and stable internal ID.
+- Added category fields and validation to Supabase with audited category administration endpoints.
+- Replaced user-activity GUIDs and raw device strings with readable actions, content summaries, changed fields, and concise device labels.
+- Replaced duplicate-report GUID comparisons with report summaries and retained identifiers only for internal actions.
+- Restyled the activity filter action to align with the surrounding controls.
+
 ## 2026-07-23 — Admin CORS correction and scalable national activity
 
 - Corrected the successful admin-overview response so it includes the requesting production origin, fixing the misleading browser `Failed to fetch` error on authenticated admin pages.

@@ -1,0 +1,67 @@
+"use client";
+
+import {FormEvent,useEffect,useState} from "react";
+
+const API=process.env.NEXT_PUBLIC_API_URL||"https://api.feather-map.com";
+const slugify=(value:string)=>value.toLowerCase().trim().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
+
+type Category={slug:string;display_name:string;enabled:boolean;sort_order:number;color?:string;icon?:string};
+type Species={slug:string;display_name:string;category_slug:string;enabled:boolean;sort_order:number;scientific_name?:string};
+
+export default function CatalogSetup({visible,token,role}:{visible:boolean;token:string;role:string}){
+  const[categories,setCategories]=useState<Category[]>([]);
+  const[species,setSpecies]=useState<Species[]>([]);
+  const[categoryDraft,setCategoryDraft]=useState<Partial<Category>>({display_name:"",sort_order:100,color:"#7fa84a",icon:"bird",enabled:true});
+  const[editingCategory,setEditingCategory]=useState<Category|null>(null);
+  const[editingSpecies,setEditingSpecies]=useState<Species|null>(null);
+  const[status,setStatus]=useState("");
+
+  async function request(path:string,options:RequestInit={}){
+    const response=await fetch(`${API}${path}`,{...options,headers:{Authorization:`Bearer ${token}`,...options.headers}});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||"Request failed");
+    return data;
+  }
+  async function load(){
+    try{const result=await request("/api/admin/species");setCategories(result.categories||[]);setSpecies(result.species||[]);setStatus("")}
+    catch(error){setStatus(error instanceof Error?error.message:"Could not load catalog")}
+  }
+  useEffect(()=>{if(visible&&token)void load()},[visible,token]);
+  if(!visible)return null;
+
+  async function save(path:string,payload:unknown,method="PATCH"){
+    setStatus("Saving…");
+    try{await request(path,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});await load();setEditingCategory(null);setEditingSpecies(null);setStatus("Saved")}
+    catch(error){setStatus(error instanceof Error?error.message:"Could not save")}
+  }
+  function createCategory(event:FormEvent){
+    event.preventDefault();
+    const slug=slugify(categoryDraft.display_name||"");
+    void save("/api/admin/categories",{...categoryDraft,slug},"POST");
+    setCategoryDraft({display_name:"",sort_order:100,color:"#7fa84a",icon:"bird",enabled:true});
+  }
+
+  return <section className="admin-card catalog-setup">
+    <header className="catalog-heading"><div><h2>Catalog setup</h2><p>Manage the categories people filter by and the species available when reporting activity.</p></div>{status&&<span role="status">{status}</span>}</header>
+    <section className="catalog-section">
+      <div className="catalog-section-heading"><div><h3>Bird categories</h3><p>Categories control map filters and organize the species catalog.</p></div></div>
+      {role==="admin"&&<form className="catalog-create" onSubmit={createCategory}>
+        <label>Name<input required value={categoryDraft.display_name||""} onChange={event=>setCategoryDraft({...categoryDraft,display_name:event.target.value})} placeholder="e.g. Raptors"/></label>
+        <label>Color<input type="color" value={categoryDraft.color||"#7fa84a"} onChange={event=>setCategoryDraft({...categoryDraft,color:event.target.value})}/></label>
+        <label>Icon label<input value={categoryDraft.icon||"bird"} onChange={event=>setCategoryDraft({...categoryDraft,icon:event.target.value})} placeholder="bird"/></label>
+        <label>Order<input type="number" value={categoryDraft.sort_order||100} onChange={event=>setCategoryDraft({...categoryDraft,sort_order:Number(event.target.value)})}/></label>
+        <button className="primary">Add category</button>
+      </form>}
+      <div className="catalog-grid">{categories.map(category=><article key={category.slug}>
+        <i style={{background:category.color||"#7fa84a"}}/><span><b>{category.display_name}</b><small>{category.icon||"bird"} · order {category.sort_order} · {category.enabled?"Active":"Hidden"}</small></span>
+        {role==="admin"?<button onClick={()=>setEditingCategory({...category})}>Edit</button>:<em>Read only</em>}
+      </article>)}</div>
+    </section>
+    <section className="catalog-section">
+      <div className="catalog-section-heading"><div><h3>Species</h3><p>Edit reporting names, category assignments, visibility, and display order.</p></div><span>{species.length} species</span></div>
+      <div className="catalog-grid species-grid">{species.map(item=><article key={item.slug}><i style={{background:categories.find(category=>category.slug===item.category_slug)?.color||"#7fa84a"}}/><span><b>{item.display_name}</b><small>{categories.find(category=>category.slug===item.category_slug)?.display_name||item.category_slug} · order {item.sort_order} · {item.enabled?"Active":"Hidden"}</small></span>{role==="admin"?<button onClick={()=>setEditingSpecies({...item})}>Edit</button>:<em>Read only</em>}</article>)}</div>
+    </section>
+    {editingCategory&&<div className="admin-overlay" onClick={()=>setEditingCategory(null)}><section className="admin-detail catalog-editor" onClick={event=>event.stopPropagation()}><button className="detail-close" onClick={()=>setEditingCategory(null)} aria-label="Close category editor">×</button><h2>Edit category</h2><p>Internal ID: {editingCategory.slug}</p><div className="detail-form"><label>Name<input value={editingCategory.display_name} onChange={event=>setEditingCategory({...editingCategory,display_name:event.target.value})}/></label><label>Icon label<input value={editingCategory.icon||"bird"} onChange={event=>setEditingCategory({...editingCategory,icon:event.target.value})}/></label><label>Color<input type="color" value={editingCategory.color||"#7fa84a"} onChange={event=>setEditingCategory({...editingCategory,color:event.target.value})}/></label><label>Display order<input type="number" value={editingCategory.sort_order} onChange={event=>setEditingCategory({...editingCategory,sort_order:Number(event.target.value)})}/></label><label className="catalog-toggle"><input type="checkbox" checked={editingCategory.enabled} onChange={event=>setEditingCategory({...editingCategory,enabled:event.target.checked})}/> Active and visible</label></div><button className="primary" onClick={()=>save(`/api/admin/categories/${editingCategory.slug}`,editingCategory)}>Save category</button></section></div>}
+    {editingSpecies&&<div className="admin-overlay" onClick={()=>setEditingSpecies(null)}><section className="admin-detail catalog-editor" onClick={event=>event.stopPropagation()}><button className="detail-close" onClick={()=>setEditingSpecies(null)} aria-label="Close species editor">×</button><h2>Edit species</h2><p>Internal ID: {editingSpecies.slug}</p><div className="detail-form"><label>Common name<input value={editingSpecies.display_name} onChange={event=>setEditingSpecies({...editingSpecies,display_name:event.target.value})}/></label><label>Scientific name<input value={editingSpecies.scientific_name||""} onChange={event=>setEditingSpecies({...editingSpecies,scientific_name:event.target.value})}/></label><label>Category<select value={editingSpecies.category_slug} onChange={event=>setEditingSpecies({...editingSpecies,category_slug:event.target.value})}>{categories.map(category=><option key={category.slug} value={category.slug}>{category.display_name}</option>)}</select></label><label>Display order<input type="number" value={editingSpecies.sort_order} onChange={event=>setEditingSpecies({...editingSpecies,sort_order:Number(event.target.value)})}/></label><label className="catalog-toggle"><input type="checkbox" checked={editingSpecies.enabled} onChange={event=>setEditingSpecies({...editingSpecies,enabled:event.target.checked})}/> Active and reportable</label></div><button className="primary" onClick={()=>save(`/api/admin/species/${editingSpecies.slug}`,editingSpecies)}>Save species</button></section></div>}
+  </section>
+}
