@@ -7,6 +7,7 @@ import "./trust-features.css";
 import "./content-tools.css";
 import "./location-tools.css";
 import "./theme.css";
+import "./map-radar.css";
 import AppearanceControl from "./appearance-control";
 
 export const metadata: Metadata = {

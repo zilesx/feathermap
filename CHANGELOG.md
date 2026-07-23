@@ -134,6 +134,14 @@ This changelog is organized around explicit product build approvals and major de
 - Added 24-hour, 7-day, 30-day, and 90-day filters.
 - Expanded the catalog beyond ducks to geese, cranes, swans, doves, shorebirds, and other migratory birds.
 - Added improved map pan, wheel zoom, pinch zoom, clusters, heatmap foundations, and detail modals.
+
+## 2026-07-22 — Weather-radar map redesign
+
+- Replaced blurred, glowing, and animated activity halos with stable weather-radar intensity bands.
+- Made Weather Radar the default map visualization for new profiles while preserving existing saved preferences.
+- Added a low, moderate, high, and intense activity scale plus a compact bird-category key.
+- Simplified map controls, clusters, and close-zoom markers with solid high-contrast surfaces and restrained selection states.
+- Preserved privacy-safe aggregation, reduced-motion behavior, and colorblind-friendly map preferences.
 - Added species visibility preferences and administrative catalog controls.
 
 ## 2026-07-17 — Live API, authentication, and RBAC
