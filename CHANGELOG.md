@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-07-28 — Species-aware migration map and large-scale test data
+
+- Kept red, privacy-safe aggregate activity dots visible from national scale through zoom 12.
+- Sized aggregate dots using estimated birds derived from the reported flock band and species flock profile.
+- Limited black numbered report markers to zoom 12 and closer.
+- Added editable species flock minimum, midpoint, maximum, occasional ceiling, aggregation behavior, habitats, and flyway membership.
+- Added a species-selectable migration layer with generalized seasonal north/south arrows across the four North American flyways.
+- Added explicit language that the migration layer is modeled context rather than live tracking or precise biological boundaries.
+- Added a deterministic, removable SQL generator for 100,000 synthetic reports across two years, constrained to configured species flyways and seasonal latitude progression.
+- Reworked map aggregation to include all eligible reports in the selected one-year window instead of sampling only the newest 1,000.
+
 ## 2026-07-28 — Report-choice feedback and continuous activity density
 
 - Restored unmistakable selected states for species and flock-size choices across Light, Dark, and System themes.
