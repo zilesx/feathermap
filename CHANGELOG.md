@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-07-28 — Report-choice feedback and continuous activity density
+
+- Restored unmistakable selected states for species and flock-size choices across Light, Dark, and System themes.
+- Added selected-option checkmarks and visible keyboard focus treatment.
+- Automatically selects the first enabled catalog species when a saved/default species is unavailable.
+- Extended red privacy-safe activity dots from national through regional and city-scale views.
+- Increased aggregation resolution progressively as the map zooms in while keeping dot sizes tightly bounded.
+- Removed the intermediate black/green cluster circles.
+- Delayed individual activity markers until close local zoom and reduced them to compact localized markers.
+- Exposed configured density and local-marker zoom thresholds in the aggregation response.
+
 ## 2026-07-23 — Unified themes, catalog setup, and readable administration
 
 - Unified Light, Dark, and System appearance values across the map, account surfaces, dialogs, administration, forms, tables, and moderation workspace.

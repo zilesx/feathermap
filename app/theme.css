@@ -31,6 +31,9 @@ body:has(.account-card) .appearance-control{display:flex}
 :root[data-theme] :is(.activity-row small,.row-meta small,.panel-empty,.account-card p,.preference-block>small,.preference-row small,.eyebrow,.stats span,.detail-grid span,.detail-hero span,.comment-list time,.no-comments,.notification-list time,.settings-field small,.moderation-heading p,.case-main small,.case-user span,.content-snapshot span,.content-snapshot small,.user-context span,.case-report time,.case-history time,.audit-list span,.audit-list time,.admin-table small,.catalog-section p,.catalog-grid small){color:var(--text-muted)!important}
 :root[data-theme] :is(.topbar,.bottom-nav){background-color:var(--overlay-solid);color:var(--text-primary)}
 :root[data-theme] :is(button,input,select,textarea){transition:none!important}
+:root[data-theme] .choice-grid button.active{position:relative;background:color-mix(in srgb,var(--green) 18%,var(--surface-input))!important;color:var(--green)!important;border-color:var(--green)!important;box-shadow:inset 0 0 0 1px var(--green),0 0 0 2px color-mix(in srgb,var(--green) 18%,transparent);font-weight:800;padding-right:32px}
+:root[data-theme] .choice-grid button.active::after{content:"✓";position:absolute;right:11px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--green);color:var(--surface-page);font-size:11px;font-weight:900}
+:root[data-theme] .choice-grid button:focus-visible{outline:3px solid color-mix(in srgb,var(--green) 70%,white);outline-offset:2px}
 
 /* Map overlays stay deliberately dark over both basemap themes. */
 :root :is(.area,.filter:not(.active),.map-controls button,.map-controls span,.hotspot span,.map-cluster,.heat-legend,.map-attribution,.avatar){background-color:#132019;color:#f4f7f2;border-color:#526258}
