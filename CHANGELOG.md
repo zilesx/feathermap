@@ -1,5 +1,13 @@
 # FeatherMap changelog
 
+## 2026-07-28 — Continuous regional activity markers
+
+- Removed the empty map-visualization gap between regional density and close-range markers.
+- Switched zoom levels 7 through 12 to visible protected-report dots so sparse privacy cells cannot disappear as they subdivide.
+- Enforced a 10-pixel minimum dot diameter with higher flock bands scaling up to 17 pixels.
+- Preserved randomized report zones and click-to-open activity behavior for regional dots.
+- Replaced the large black close-range circles with compact red map pins at zoom 12 and closer.
+
 ## 2026-07-28 — Species-aware migration map and large-scale test data
 
 - Kept red, privacy-safe aggregate activity dots visible from national scale through zoom 12.
