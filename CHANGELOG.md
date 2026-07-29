@@ -1,5 +1,18 @@
 # FeatherMap changelog
 
+## 2026-07-28 — Custom and delayed report locations
+
+- Added report-location choices for the current device, current map center, saved locations, popular locations, and place search.
+- Added an explicit observation date and time with a seven-day initial reporting window.
+- Based report freshness, map placement, and expiration on observation time rather than submission time.
+- Added independently recorded submission time, location source, and calculated delay context.
+- Enforced coordinate, future-time, and maximum-age validation in the API.
+- Preserved randomized location protection for every location source.
+- Added submission source and delay context to moderation details and user activity auditing.
+- Added an editable administrative maximum-report-delay setting.
+- Avoided attaching a current regional weather snapshot to observations delayed by more than one hour.
+- Kept offline drafts, synchronization, retries, SMTP, external data, expanded regulations, and push notifications deferred.
+
 ## 2026-07-28 — Continuous regional activity markers
 
 - Removed the empty map-visualization gap between regional density and close-range markers.

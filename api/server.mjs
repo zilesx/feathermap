@@ -152,12 +152,17 @@ const species = new Set(["mallard", "teal", "gadwall", "pintail", "wood_duck", "
 const flockSizes = new Set(["1-10", "10-25", "25-50", "50+"]);
 const behaviors = new Set(["feeding", "circling", "flying_over", "resting", "moving_in"]);
 
-function validateSighting(input) {
+function validateSighting(input,maxAgeDays=7) {
   const latitude = Number(input.latitude);
   const longitude = Number(input.longitude);
+  const occurredAt = new Date(input.occurred_at||Date.now());
+  const locationSource=["current","map","saved","popular","search"].includes(input.location_source)?input.location_source:"current";
   if (!flockSizes.has(input.flock_size) || !behaviors.has(input.behavior)) throw Object.assign(new Error("Invalid sighting details"), { status: 400 });
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) throw Object.assign(new Error("Invalid coordinates"), { status: 400 });
-  return { latitude, longitude };
+  if(Number.isNaN(occurredAt.getTime()))throw Object.assign(new Error("A valid observation time is required"),{status:400});
+  if(occurredAt.getTime()>Date.now()+5*60000)throw Object.assign(new Error("Observation time cannot be in the future"),{status:400});
+  if(occurredAt.getTime()<Date.now()-Math.max(1,Number(maxAgeDays)||7)*86400000)throw Object.assign(new Error(`Reports must be submitted within ${maxAgeDays} days of the observation`),{status:400});
+  return { latitude, longitude,occurredAt,locationSource };
 }
 
 const preferenceGroups = ["ducks", "geese", "cranes", "doves", "shorebirds", "upland", "other"];
@@ -180,7 +185,7 @@ async function moderationContext(row,full=false){
   let content=null,sightingId=row.content_type==="sighting"||row.content_type==="note"?row.content_id:null,ownerId=null;
   if(row.content_type==="comment"){const rows=await supabase(`/rest/v1/sighting_comments?id=eq.${row.content_id}&select=id,sighting_id,commenter_id,body,created_at`);content=rows[0]||null;sightingId=content?.sighting_id;ownerId=content?.commenter_id}
   if(row.content_type==="photo"){const rows=await supabase(`/rest/v1/sighting_media?id=eq.${row.content_id}&select=id,sighting_id,uploader_id,mime_type,byte_size,created_at`);content=rows[0]||null;sightingId=content?.sighting_id;ownerId=content?.uploader_id}
-  const sightings=sightingId?await supabase(`/rest/v1/sightings?id=eq.${sightingId}&select=id,reporter_id,species_slug,flock_size,behavior,notes,confidence,occurred_at,created_at,status`):[];const sighting=sightings[0]||null;ownerId=ownerId||sighting?.reporter_id;
+  const sightings=sightingId?await supabase(`/rest/v1/sightings?id=eq.${sightingId}&select=id,reporter_id,species_slug,flock_size,behavior,notes,confidence,occurred_at,submitted_at,location_source,created_at,status`):[];const baseSighting=sightings[0]||null,delayMinutes=baseSighting?Math.max(0,Math.round((new Date(baseSighting.submitted_at||baseSighting.created_at)-new Date(baseSighting.occurred_at))/60000)):0,submissionContext=baseSighting?`Submission context: ${String(baseSighting.location_source||"current").replaceAll("_"," ")} location · ${delayMinutes<60?`${delayMinutes} minute`:delayMinutes<1440?`${Math.round(delayMinutes/60)} hour`:`${Math.round(delayMinutes/1440)} day`}${delayMinutes===1?"":"s"} after observation`:null;const sighting=baseSighting?{...baseSighting,submission_delay_minutes:delayMinutes,submission_context:submissionContext,notes:[baseSighting.notes,submissionContext].filter(Boolean).join("\n\n")}:null;ownerId=ownerId||sighting?.reporter_id;
   const profiles=ownerId?await supabase(`/rest/v1/profiles?id=eq.${ownerId}&select=id,display_name,first_name,last_name,role,trust_score,report_count,suspended_until`):[];const owner=profiles[0]||null;
   const reports=await supabase(`/rest/v1/content_reports?content_type=eq.${row.content_type}&content_id=eq.${row.content_id}&select=id,reporter_id,reason,details,created_at&order=created_at.desc&limit=50`);
   if(!full)return{...row,content_preview:content?.body?.slice(0,180)||sighting?.notes?.slice(0,180)||null,sighting,owner,report_count:reports.length};
@@ -276,6 +281,7 @@ const server = http.createServer(async (req, res) => {
     if(req.method==="GET"&&url.pathname==="/api/notifications"){const{user}=await activeUser(req);const rows=await supabase(`/rest/v1/notifications?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=100`);return json(res,200,{notifications:rows},origin)}
     if(req.method==="POST"&&url.pathname==="/api/notifications/read-all"){const{user}=await activeUser(req);await supabase(`/rest/v1/notifications?user_id=eq.${user.id}&read_at=is.null`,{method:"PATCH",data:{read_at:new Date().toISOString()},prefer:"return=minimal"});return json(res,204,null,origin)}
     if(req.method==="GET"&&url.pathname==="/api/locations/popular"){return json(res,200,{locations:[{id:"platte",label:"Central Platte River, Nebraska",latitude:40.82,longitude:-98.55,zoom:8,flyway:"Central"},{id:"sacramento",label:"Sacramento Valley, California",latitude:39.4,longitude:-121.8,zoom:7,flyway:"Pacific"},{id:"prairie",label:"Prairie Pothole Region",latitude:47.1,longitude:-99.2,zoom:6,flyway:"Central"},{id:"upper-mississippi",label:"Upper Mississippi River",latitude:43.3,longitude:-91.2,zoom:7,flyway:"Mississippi"},{id:"chesapeake",label:"Chesapeake Bay",latitude:38.6,longitude:-76.2,zoom:7,flyway:"Atlantic"},{id:"gulf",label:"Louisiana Gulf Coast",latitude:29.6,longitude:-91.2,zoom:7,flyway:"Mississippi"}]},origin)}
+    if(req.method==="GET"&&url.pathname==="/api/locations/search"){rateLimit(req,20);const q=String(url.searchParams.get("q")||"").trim().slice(0,100);if(q.length<3)return json(res,200,{locations:[]},origin);const response=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&q=${encodeURIComponent(q)}`,{headers:{"User-Agent":"FeatherMap/1.0 (location search)"}});if(!response.ok)throw Object.assign(new Error("Location search is temporarily unavailable"),{status:502});const rows=await response.json();return json(res,200,{locations:rows.map(item=>({id:String(item.place_id),label:String(item.display_name).slice(0,160),latitude:Number(item.lat),longitude:Number(item.lon),zoom:9}))},origin)}
     if(req.method==="GET"&&url.pathname==="/api/locations/saved"){const{user}=await activeUser(req);const rows=await supabase(`/rest/v1/saved_locations?user_id=eq.${user.id}&select=id,label,latitude,longitude,zoom,sort_order,is_default&order=sort_order.asc,label.asc`);return json(res,200,{locations:rows},origin)}
     if(req.method==="POST"&&url.pathname==="/api/locations/saved"){rateLimit(req,20);const{user}=await activeUser(req);const input=await body(req),lat=Math.round(Number(input.latitude)*100)/100,lon=Math.round(Number(input.longitude)*100)/100;if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat<-85||lat>85||lon<-180||lon>180)throw Object.assign(new Error("Invalid saved location"),{status:400});const rows=await supabase("/rest/v1/saved_locations",{method:"POST",data:{user_id:user.id,label:String(input.label||"Saved view").trim().slice(0,80),latitude:lat,longitude:lon,zoom:Math.min(15,Math.max(2,Number(input.zoom)||7))},prefer:"return=representation"});await userActivity(req,user.id,"location.save","saved_location",rows[0].id);return json(res,201,{location:rows[0]},origin)}
     const savedLocation=url.pathname.match(/^\/api\/locations\/saved\/([0-9a-f-]{36})$/i);if(req.method==="DELETE"&&savedLocation){const{user}=await activeUser(req);await supabase(`/rest/v1/saved_locations?id=eq.${savedLocation[1]}&user_id=eq.${user.id}`,{method:"DELETE",prefer:"return=minimal"});await userActivity(req,user.id,"location.delete","saved_location",savedLocation[1]);return json(res,204,null,origin)}
@@ -303,20 +309,21 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && url.pathname === "/api/sightings") {
       rateLimit(req, 10);
-      const reportingConfig=await configValue("reporting",{enabled:true});if(reportingConfig.enabled===false)throw Object.assign(new Error("Reporting is temporarily disabled"),{status:503});
+      const reportingConfig=await configValue("reporting",{enabled:true,max_report_age_days:7});if(reportingConfig.enabled===false)throw Object.assign(new Error("Reporting is temporarily disabled"),{status:503});
       const { user } = await activeUser(req);
       const input = await body(req);
-      const { latitude, longitude } = validateSighting(input);
+      const { latitude, longitude,occurredAt,locationSource } = validateSighting(input,reportingConfig.max_report_age_days);
       const catalog = await supabase(`/rest/v1/species_catalog?slug=eq.${encodeURIComponent(input.species)}&enabled=eq.true&select=slug`);
       if (!catalog.length) throw Object.assign(new Error("Bird type is not currently available"), { status:400 });
-      const [profileRows,weather]=await Promise.all([supabase(`/rest/v1/profiles?id=eq.${user.id}&select=first_name,last_name,show_attribution`),weatherSnapshot(latitude,longitude)]);const attribution=publicName(profileRows[0]);
+      const [profileRows,weather]=await Promise.all([supabase(`/rest/v1/profiles?id=eq.${user.id}&select=first_name,last_name,show_attribution`),Date.now()-occurredAt.getTime()<3600000?weatherSnapshot(latitude,longitude):Promise.resolve(null)]);const attribution=publicName(profileRows[0]);
       const rows = await supabase("/rest/v1/sightings", { method: "POST", data: {
         reporter_id: user.id, species_slug: input.species, flock_size: input.flock_size, behavior: input.behavior,
         exact_latitude: latitude, exact_longitude: longitude, accuracy_meters: Math.min(Math.max(Number(input.accuracy_meters) || 0, 0), 10000),
-        notes: typeof input.notes === "string" ? input.notes.trim().slice(0, 1000) || null : null,weather,observed_weather:observedWeather(input.observed_weather),reporter_attribution:attribution,
+        occurred_at:occurredAt.toISOString(),submitted_at:new Date().toISOString(),expires_at:new Date(occurredAt.getTime()+6*3600000).toISOString(),status:occurredAt.getTime()<Date.now()-6*3600000?"expired":"active",location_source:locationSource,
+        notes: typeof input.notes === "string" ? input.notes.trim().slice(0, 1000) || null : null,weather:Date.now()-occurredAt.getTime()<3600000?weather:null,observed_weather:observedWeather(input.observed_weather),reporter_attribution:attribution,
       }, prefer: "return=representation" });
       const nearby=await supabase(`/rest/v1/sightings?id=neq.${rows[0].id}&species_slug=eq.${encodeURIComponent(input.species)}&status=eq.active&occurred_at=gte.${encodeURIComponent(new Date(Date.now()-3*3600000).toISOString())}&exact_latitude=gte.${latitude-.18}&exact_latitude=lte.${latitude+.18}&exact_longitude=gte.${longitude-.22}&exact_longitude=lte.${longitude+.22}&select=id,exact_latitude,exact_longitude&limit=5`);for(const other of nearby){const similarity=Math.max(60,Math.round(100-Math.hypot((other.exact_latitude-latitude)*69,(other.exact_longitude-longitude)*55)*4));const pair=[rows[0].id,other.id].sort();await supabase("/rest/v1/duplicate_candidates?on_conflict=sighting_a,sighting_b",{method:"POST",data:{sighting_a:pair[0],sighting_b:pair[1],similarity},prefer:"resolution=ignore-duplicates,return=minimal"});await supabase("/rest/v1/moderation_cases",{method:"POST",data:{content_type:"sighting",content_id:rows[0].id,reason:`possible_duplicate:${other.id}`},prefer:"return=minimal"});}
-      return json(res, 201, { id: rows[0].id, expires_at: rows[0].expires_at }, origin);
+      await userActivity(req,user.id,"sighting.create","sighting",rows[0].id,"success",null,{species:input.species,flock_size:input.flock_size,occurred_at:occurredAt.toISOString(),submitted_at:rows[0].submitted_at,location_source:locationSource,delay_minutes:Math.max(0,Math.round((Date.now()-occurredAt.getTime())/60000))});return json(res, 201, { id: rows[0].id, expires_at: rows[0].expires_at }, origin);
     }
 
     const ownedSighting=url.pathname.match(/^\/api\/sightings\/([0-9a-f-]{36})$/i);
