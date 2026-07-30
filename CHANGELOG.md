@@ -1,5 +1,17 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Admin layout and access-management polish
+
+- Rebuilt Platform feature cards around container width so intermediate desktop and tablet layouts no longer clip controls behind the sidebar.
+- Normalized every administration navigation label to the same font, size, weight, spacing, and capitalization.
+- Removed positional pseudo-element navigation labels and rendered Catalog Setup directly.
+- Expanded the Audit workspace to the available viewport height, removed its fixed 250-pixel list limit, and added responsive sticky column headings.
+- Preserved readable audit card rows on narrow mobile screens and proportional columns on large displays.
+- Standardized the Save Access action with proper sizing, spacing, focus, disabled, and saving states.
+- Added live effective-permission previews while administrators select roles.
+- Added `PUT` to API CORS preflight responses so browser-based role changes reach the API.
+- Preserved actual API error messages for protected operations such as self-demotion, final-super-administrator removal, and MFA step-up.
+
 ## 2026-07-29 — Responsive administration and complete RBAC controls
 
 - Made audit rows scale across desktop, tablet, and mobile layouts, including safe wrapping for long actors, targets, devices, actions, and timestamps.
