@@ -1,5 +1,11 @@
 # FeatherMap changelog
 
+## 2026-07-30 — Dev modal and administration polish
+
+- Rebalanced light-mode account and activity modals with layered pale-sage surfaces, softer borders, and readable nested controls.
+- Removed user role assignment from Platform while retaining the predefined role catalog; access changes remain in User administration.
+- Standardized User Details profile-save actions with the shared administrative primary-button styling.
+
 ## 2026-07-29 — Feedback detail crash fix
 
 - Fixed the shared private screenshot gallery reading a cleared React image event during deferred state updates.
