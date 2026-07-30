@@ -1,0 +1,16 @@
+.feedback-launcher {
+  position: fixed;
+  z-index: 10;
+  right: 20px;
+  bottom: 88px;
+  border: 1px solid #63755f;
+  border-radius: 999px;
+  background: #152019e8;
+  color: #dce7dd;
+  padding: 8px 13px;
+  font-size: 9px;
+  font-weight: 800;
+  box-shadow: 0 7px 24px #0006;
+}
+.feedback-launcher:hover { border-color: var(--green); color: var(--green); }
+@media (max-width: 520px) { .feedback-launcher { right: 10px; bottom: 76px; } }

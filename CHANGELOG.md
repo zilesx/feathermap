@@ -1,5 +1,15 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Private product feedback workflow
+
+- Added an authenticated in-app feedback experience for bugs, feature requests, usability issues, data corrections, safety/privacy concerns, and other product feedback.
+- Added optional sanitized screenshots with client compression and server-side metadata scrubbing.
+- Added explicit, opt-in safe diagnostics that exclude tokens, passwords, query strings, and protected activity coordinates.
+- Added user feedback history, status tracking, staff conversations, resolution summaries, and account notifications.
+- Added a dedicated administrative feedback queue with active/history filters, categories, priority, assignment, internal notes, user-visible responses, duplicate linking, and optional sanitized GitHub issue references.
+- Added private feedback, message, attachment, storage, RBAC, audit, and notification infrastructure.
+- Kept product feedback separate from community-content reporting and moderation.
+
 ## 2026-07-29 — Clear location feedback and policy-aware administration
 
 - Added an in-map location progress indicator, cancellation control, and clear success, denial, and unavailable states before the map recenters.
