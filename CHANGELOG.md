@@ -1,5 +1,17 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Feedback workflow refinement
+
+- Replaced staff and duplicate UUID entry fields with searchable, human-readable associations plus Assign to Me and Unassigned shortcuts.
+- Automatically marks linked duplicate feedback appropriately and shows the original feedback title and context.
+- Added authenticated full-size screenshot lightboxes with zoom, pan, fit, keyboard navigation, previous/next controls, and image metadata.
+- Added persistent unread feedback indicators on the map Feedback launcher, My Feedback tab, and individual feedback list entries.
+- Marks only the opened feedback conversation’s notifications as read and polls for new staff updates.
+- Standardized Send Response and workflow button styling.
+- Applied title case to all visible feedback statuses and priorities.
+- Removed the unfinished GitHub issue control and the redundant administrative diagnostics note.
+- Corrected the feedback migration for the deployed RBAC permission schema.
+
 ## 2026-07-29 — Private product feedback workflow
 
 - Added an authenticated in-app feedback experience for bugs, feature requests, usability issues, data corrections, safety/privacy concerns, and other product feedback.

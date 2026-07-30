@@ -55,10 +55,10 @@ insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values ('feedback-attachments','feedback-attachments',false,5242880,array['image/jpeg','image/png','image/webp'])
 on conflict (id) do update set public=false,file_size_limit=excluded.file_size_limit,allowed_mime_types=excluded.allowed_mime_types;
 
-insert into public.rbac_permissions(key,display_name,description) values
- ('feedback.view','Feedback view','View the private product feedback queue'),
- ('feedback.manage','Feedback manage','Assign, respond to, and resolve product feedback')
-on conflict (key) do update set display_name=excluded.display_name,description=excluded.description;
+insert into public.rbac_permissions(key,description,sensitive) values
+ ('feedback.view','View the private product feedback queue',false),
+ ('feedback.manage','Assign, respond to, and resolve product feedback',false)
+on conflict (key) do update set description=excluded.description,sensitive=excluded.sensitive;
 
 insert into public.rbac_role_permissions(role_key,permission_key) values
  ('super_admin','feedback.view'),('super_admin','feedback.manage'),
