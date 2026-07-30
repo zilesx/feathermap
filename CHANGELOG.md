@@ -1,5 +1,19 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Platform foundation, controlled rollout, and map selection
+
+- Replaced the report form’s map-center shortcut with an interactive map-selection mode that supports tap placement, pan and zoom refinement, explicit confirmation, and cancellation.
+- Added client-generated report UUIDs and API idempotency so retrying the same report cannot create duplicates.
+- Added browser-local IndexedDB report drafts with explicit draft, queued, syncing, failed, and submitted states; failed or offline submissions preserve their draft instead of discarding user work.
+- Added shared service contracts for location, camera, secure storage, drafts, networking, synchronization, map caching, and notifications to keep the web application ready for later native iOS and Android adapters.
+- Added structured API errors that distinguish retryable failures, conflicts requiring edits, authentication, permission, and server failures.
+- Added predefined composable RBAC roles and granular permissions for moderation, support, catalog, operations, security, and super administration.
+- Added multiple role assignments per user, permission explanations, required change reasons, self-elevation prevention, final-super-administrator protection, optional MFA step-up for sensitive role changes, and complete mutation auditing.
+- Added database-backed feature flags with environment defaults, deterministic percentage rollout, platform and role rules, client-version floors, expiring user overrides, evaluation explanations, and emergency disable precedence.
+- Added an administrator Platform section for feature management, individual user overrides, predefined role assignment, and synchronization/client-version visibility.
+- Added synchronization event storage for duplicate submissions, successful submissions, failures, platforms, versions, retry counts, and queue age.
+- Kept native packaging, native background execution, native secure storage/filesystem/maps, push delivery, AI species identification, full jurisdiction-aware regulations, external data sources, SMTP, and arbitrary custom roles tabled for later iterations.
+
 ## 2026-07-28 — Custom and delayed report locations
 
 - Added report-location choices for the current device, current map center, saved locations, popular locations, and place search.
