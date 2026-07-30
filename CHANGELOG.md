@@ -1,5 +1,13 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Clear location feedback and policy-aware administration
+
+- Added an in-map location progress indicator, cancellation control, and clear success, denial, and unavailable states before the map recenters.
+- Added readable active-role badges to the user directory while retaining Manage Access as the editing control.
+- Standardized Platform action sizing, typography, alignment, focus states, and responsive behavior.
+- Made sensitive role-change MFA step-up conditional on the configured staff MFA policy instead of requiring MFA when it is optional or disabled.
+- Added coverage for role labels, location feedback, Platform action styling, and policy-aware MFA enforcement.
+
 ## 2026-07-29 — Admin workspace structure and unified MFA policy
 
 - Moved Platform Controls and Catalog Setup inside the shared administration workspace so CSS grid placement can no longer render them underneath the sidebar.
