@@ -1,5 +1,10 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Feedback detail crash fix
+
+- Fixed the shared private screenshot gallery reading a cleared React image event during deferred state updates.
+- Captures image dimensions synchronously before updating gallery state, restoring feedback detail views for both users and administrators.
+
 ## 2026-07-29 — Feedback workflow refinement
 
 - Replaced staff and duplicate UUID entry fields with searchable, human-readable associations plus Assign to Me and Unassigned shortcuts.
