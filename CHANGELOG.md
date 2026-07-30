@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Admin workspace structure and unified MFA policy
+
+- Moved Platform Controls and Catalog Setup inside the shared administration workspace so CSS grid placement can no longer render them underneath the sidebar.
+- Added explicit display labels for every administration tab and separated those labels from internal route keys.
+- Normalized page headings and navigation capitalization, including Catalog Setup and FeatherMap branding.
+- Consolidated administrator and moderator MFA requirements under the single Staff MFA Policy selector.
+- Removed the two contradictory per-role MFA checkboxes from the editable interface.
+- Added aligned administrator and moderator enforcement summaries that update with the selected policy.
+- Kept legacy MFA booleans synchronized automatically when the unified policy is saved for backward compatibility.
+- Preserved step-up verification as a separate setting for sensitive administrative actions.
+
 ## 2026-07-29 — Admin layout and access-management polish
 
 - Rebuilt Platform feature cards around container width so intermediate desktop and tablet layouts no longer clip controls behind the sidebar.
