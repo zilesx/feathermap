@@ -1,5 +1,12 @@
 # FeatherMap changelog
 
+## 2026-07-30 — Dev account suspension safeguards
+
+- Replaced one-click account suspension with a reasoned, duration-aware confirmation workflow that clearly warns administrators about login blocking and session revocation.
+- Prevented administrators from suspending or unlocking themselves and protected the final active Super Administrator.
+- Enforced suspension during password login, revoked active sessions on suspension, and added explicit unlock handling for Support, Security, and Super Administrators.
+- Added suspension metadata, authentication-unlock cleanup, security notifications, detailed audit events, and clear account-status indicators.
+
 ## 2026-07-30 — Dev modal and administration polish
 
 - Rebalanced light-mode account and activity modals with layered pale-sage surfaces, softer borders, and readable nested controls.
