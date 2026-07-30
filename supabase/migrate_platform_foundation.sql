@@ -65,6 +65,22 @@ insert into public.user_roles(user_id,role_key,reason)
 select id,case role when 'admin' then 'super_admin' when 'moderator' then 'moderator' else 'user' end,'Migrated from legacy profile role'
 from public.profiles on conflict do nothing;
 
+insert into public.user_roles(user_id,role_key,reason)
+select id,'super_admin','Converted from legacy administrator to full super administrator'
+from public.profiles where role='admin'
+on conflict(user_id,role_key) do update
+set reason=excluded.reason,expires_at=null;
+
+insert into public.admin_audit_log(actor_id,action,target_type,target_id,details)
+select null,'legacy_admin.promote','profile',p.id::text,
+       jsonb_build_object('role','super_admin','reason','Legacy administrator conversion')
+from public.profiles p
+where p.role='admin'
+and not exists(
+  select 1 from public.admin_audit_log a
+  where a.action='legacy_admin.promote' and a.target_id=p.id::text
+);
+
 create table if not exists public.feature_flags(
   id uuid primary key default gen_random_uuid(),
   key text not null unique check(key~'^[a-z][a-z0-9_]{2,80}$'),
@@ -142,5 +158,8 @@ alter table public.feature_flag_rules enable row level security;
 alter table public.feature_flag_user_overrides enable row level security;
 alter table public.client_sync_events enable row level security;
 revoke all on public.rbac_roles,public.rbac_permissions,public.rbac_role_permissions,public.user_roles,public.feature_flags,public.feature_flag_rules,public.feature_flag_user_overrides,public.client_sync_events from anon,authenticated;
+grant usage on schema public to service_role;
+grant select,insert,update,delete on public.rbac_roles,public.rbac_permissions,public.rbac_role_permissions,public.user_roles,public.feature_flags,public.feature_flag_rules,public.feature_flag_user_overrides,public.client_sync_events to service_role;
+grant usage,select on sequence public.client_sync_events_id_seq to service_role;
 
 commit;

@@ -10,11 +10,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       PORT: "3001"
-      SUPABASE_URL: "http://host.docker.internal:8000"
+      SUPABASE_URL: "${SUPABASE_URL:-http://supabase-kong:8000}"
       SUPABASE_ANON_KEY: "${SUPABASE_ANON_KEY}"
       SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS}"
-      PUBLIC_APP_URL: "${PUBLIC_APP_URL}"
+      PUBLIC_APP_URL: "${PUBLIC_APP_URL:-https://flyway-app.zileslabs.com}"
       SECURITY_HASH_SALT: "${SECURITY_HASH_SALT}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/health"]
@@ -22,3 +22,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    networks:
+      - default
+      - supabase_internal
+
+networks:
+  supabase_internal:
+    external: true
+    name: "${SUPABASE_NETWORK_NAME:-supabase_default}"

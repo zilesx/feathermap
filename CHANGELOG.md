@@ -1,5 +1,17 @@
 # FeatherMap changelog
 
+## 2026-07-29 — Responsive administration and complete RBAC controls
+
+- Made audit rows scale across desktop, tablet, and mobile layouts, including safe wrapping for long actors, targets, devices, actions, and timestamps.
+- Replaced the user directory’s legacy three-role selector with dedicated multi-role access management.
+- Added full predefined-role selection, effective permission visibility, required change reasons, and user-specific access controls.
+- Hid the legacy compatibility role from editable user profile fields.
+- Made Platform administration load roles, feature flags, and synchronization health independently so one failed endpoint no longer leaves the entire page blank.
+- Added explicit Platform loading, empty, permission, and endpoint error states.
+- Converted every existing legacy administrator to a non-expiring `super_admin` assignment with an idempotent audit record.
+- Permanently granted Supabase `service_role` access to the RBAC, feature-flag, and synchronization tables.
+- Connected the FeatherMap API to the Supabase Docker network through tracked Compose configuration, with configurable network and Supabase service names.
+
 ## 2026-07-29 — Platform foundation, controlled rollout, and map selection
 
 - Replaced the report form’s map-center shortcut with an interactive map-selection mode that supports tap placement, pan and zoom refinement, explicit confirmation, and cancellation.
