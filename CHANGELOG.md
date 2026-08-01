@@ -1,5 +1,17 @@
 # FeatherMap changelog
 
+## 2026-07-31 — Dev session reliability, responsive controls, and category map iteration
+
+- Made Supabase authentication administration tolerant of empty and non-JSON responses, and changed suspension to report profile and session-revocation outcomes independently instead of returning a misleading generic error.
+- Added signup and authenticated-request session recording, throttled last-seen updates, individual logout revocation, session status data, administrator revocation endpoints, and suspension-aware session details.
+- Added configurable application-session warning, idle, staff, and absolute lifetime policies plus a web countdown that can refresh or end the session and coordinates changes across browser tabs.
+- Rebuilt Platform feature cards around resilient card-level controls so action buttons remain inside their containers at desktop, tablet, and mobile widths.
+- Added accessible predefined-role permission details, human-readable descriptions, and sensitive-operation indicators.
+- Applied shared light-mode modal and button corrections, restored the Send feedback primary action, separated the map legend from the activity card, and made feedback titles open their details.
+- Connected category catalog colors to aggregate and local map activity, including mixed-category composition metadata and privacy-safe category aggregation.
+- Added configurable HTTPS bird-reference sources and public learn-more links.
+- Replaced retired API defaults with environment-driven FeatherMap hosts and added tests preventing development and production endpoint leakage.
+
 ## 2026-07-30 — Dev account suspension safeguards
 
 - Replaced one-click account suspension with a reasoned, duration-aware confirmation workflow that clearly warns administrators about login blocking and session revocation.

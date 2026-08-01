@@ -15,6 +15,8 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
  const[flags,setFlags]=useState<any[]>([]);
  const[operations,setOperations]=useState<any>({totals:{},recent_failures:[]});
  const[roles,setRoles]=useState<any[]>([]);
+ const[permissions,setPermissions]=useState<any[]>([]);
+ const[selectedRole,setSelectedRole]=useState<any>(null);
  const[status,setStatus]=useState("");
  const[errors,setErrors]=useState<Record<string,string>>({});
  const[override,setOverride]=useState({flag:"",user_id:"",value:"true",reason:"",expires_at:""});
@@ -36,7 +38,7 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
   }else nextErrors.features=results[0].reason?.message||"Could not load feature flags";
   if(results[1].status==="fulfilled")setOperations(results[1].value);
   else nextErrors.operations=results[1].reason?.message||"Could not load synchronization health";
-  if(results[2].status==="fulfilled")setRoles(results[2].value.roles||[]);
+  if(results[2].status==="fulfilled"){setRoles(results[2].value.roles||[]);setPermissions(results[2].value.permissions||[])}
   else nextErrors.roles=results[2].reason?.message||"Could not load roles";
   setErrors(nextErrors);
   setStatus(Object.keys(nextErrors).length?"Some platform controls could not be loaded.":"");
@@ -77,7 +79,7 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
   <section className="platform-section">
    <h3>Predefined access roles</h3>
    {errors.roles?<div className="platform-error">{errors.roles}</div>:roles.length===0?<div className="platform-empty">No role definitions are available.</div>:<div className="role-definition-grid">
-    {roles.map(role=><article key={role.key}><b>{role.display_name}</b><span>{role.description}</span><small>{role.permissions.length} permissions</small></article>)}
+    {roles.map(role=><button type="button" className="role-definition-card" key={role.key} onClick={()=>setSelectedRole(role)} aria-label={`View permissions for ${role.display_name}`}><b>{role.display_name}</b><span>{role.description}</span><small>{role.permissions.length} permissions · View details</small></button>)}
    </div>}
   </section>
   <section className="platform-section">
@@ -85,10 +87,10 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
    {errors.features?<div className="platform-error">{errors.features}</div>:flags.length===0?<div className="platform-empty">No feature flags have been configured.</div>:<div className="feature-grid">
     {flags.map((flag,index)=><article key={flag.id}>
      <div><b>{flag.display_name}</b><code>{flag.key}</code><p>{flag.description}</p></div>
-     {[["enabled","Enabled"],["default_value","Default on"],["emergency_disabled","Emergency off"]].map(([key,label])=><label key={key}><input type="checkbox" checked={!!flag[key]} onChange={event=>setFlags(items=>items.map((item,itemIndex)=>itemIndex===index?{...item,[key]:event.target.checked}:item))}/>{label}</label>)}
-     <label>Rollout %<input type="number" min="0" max="100" value={flag.rollout_percentage} onChange={event=>setFlags(items=>items.map((item,itemIndex)=>itemIndex===index?{...item,rollout_percentage:Number(event.target.value)}:item))}/></label>
+     <div className="feature-toggles">{[["enabled","Enabled"],["default_value","Default on"],["emergency_disabled","Emergency off"]].map(([key,label])=><label key={key}><input type="checkbox" checked={!!flag[key]} onChange={event=>setFlags(items=>items.map((item,itemIndex)=>itemIndex===index?{...item,[key]:event.target.checked}:item))}/>{label}</label>)}</div>
+     <div className="feature-fields"><label>Rollout %<input type="number" min="0" max="100" value={flag.rollout_percentage} onChange={event=>setFlags(items=>items.map((item,itemIndex)=>itemIndex===index?{...item,rollout_percentage:Number(event.target.value)}:item))}/></label>
      <label>Minimum version<input value={flag.minimum_client_version||""} onChange={event=>setFlags(items=>items.map((item,itemIndex)=>itemIndex===index?{...item,minimum_client_version:event.target.value}:item))}/></label>
-     <button className="primary" onClick={()=>save(flag)}>Save</button>
+     <button className="primary" onClick={()=>save(flag)}>Save</button></div>
     </article>)}
    </div>}
   </section>
@@ -110,5 +112,6 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
     {operations.recent_failures?.length?<div className="sync-failures">{operations.recent_failures.map((item:any,index:number)=><p key={index}><b>{item.error_code||item.event_type}</b><span>{item.platform} {item.client_version||"unknown"} · {new Date(item.created_at).toLocaleString()}</span></p>)}</div>:<p>No recent synchronization failures.</p>}
    </>}
   </section>
+  {selectedRole&&<div className="admin-overlay role-permission-overlay" onClick={()=>setSelectedRole(null)}><section className="admin-detail role-permission-detail" role="dialog" aria-modal="true" aria-labelledby="role-permission-title" onClick={event=>event.stopPropagation()}><button className="detail-close" onClick={()=>setSelectedRole(null)} aria-label="Close permission details">×</button><span className="case-type">Predefined access role</span><h2 id="role-permission-title">{selectedRole.display_name}</h2><p>{selectedRole.description}</p><div className="permission-detail-list">{selectedRole.permissions.map((key:string)=>{const permission=permissions.find(item=>item.key===key);return <article key={key}><b>{key.replaceAll(/[._]/g," ").replace(/\b\w/g,(value:string)=>value.toUpperCase())}</b><span>{permission?.description||"Allows this administrative operation."}</span>{permission?.sensitive&&<small>Sensitive operation</small>}</article>})}</div><button className="primary" onClick={()=>setSelectedRole(null)}>Close</button></section></div>}
  </section>;
 }

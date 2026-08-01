@@ -8,6 +8,7 @@ import "./content-tools.css";
 import "./location-tools.css";
 import "./theme.css";
 import "./map-radar.css";
+import "./queued-iteration.css";
 
 export const metadata: Metadata = {
   title: "FeatherMap — Private Migratory Bird Activity",

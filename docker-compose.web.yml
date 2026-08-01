@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.web
       args:
-        NEXT_PUBLIC_API_URL: https://flyway-api.zileslabs.com
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.feather-map.com}
     container_name: flyway-web
     restart: unless-stopped
     ports:

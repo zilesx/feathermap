@@ -2,7 +2,7 @@
 
 import {useEffect,useState} from "react";
 
-const API=process.env.NEXT_PUBLIC_API_URL||"https://flyway-api.zileslabs.com";
+const API=process.env.NEXT_PUBLIC_API_URL||"https://api.feather-map.com";
 type Appearance="system"|"dark"|"light";
 
 function applyAppearance(value:Appearance){

@@ -141,7 +141,7 @@ export default function FeedbackAdmin({ visible, token }: { visible: boolean; to
       </div>
       {message && <div className="admin-notice">{message}</div>}
       <div className="feedback-admin-list">
-        {items.length ? items.map((item) => <article key={item.id}><span><em>{titleCase(item.category)}</em><b>{item.title}</b><small>{item.submitted_by_name} · {new Date(item.created_at).toLocaleString()}</small></span><span className={`feedback-admin-status status-${item.status}`}>{titleCase(item.status)}</span><strong className={`priority-${item.priority}`}>{titleCase(item.priority)}</strong><button onClick={() => open(item.id)}>Open details</button></article>) : <p>No feedback matches these filters.</p>}
+        {items.length ? items.map((item) => <article key={item.id}><span><em>{titleCase(item.category)}</em><button className="detail-title" onClick={() => open(item.id)}>{item.title}</button><small>{item.submitted_by_name} · {new Date(item.created_at).toLocaleString()}</small></span><span className={`feedback-admin-status status-${item.status}`}>{titleCase(item.status)}</span><strong className={`priority-${item.priority}`}>{titleCase(item.priority)}</strong><button onClick={() => open(item.id)}>Open details</button></article>) : <p>No feedback matches these filters.</p>}
       </div>
       {selected && <div className="admin-overlay" onClick={() => setSelected(null)}>
         <section className="admin-detail feedback-admin-detail" onClick={(event) => event.stopPropagation()}>
