@@ -198,12 +198,12 @@ function validateSighting(input,maxAgeDays=7) {
 }
 
 const preferenceGroups = ["ducks", "geese", "cranes", "doves", "shorebirds", "upland", "other"];
-const defaultPreferences = { visible_groups: preferenceGroups, default_days: 180, start_view: "us", auto_open_card: true, appearance: "system", map_view: "density", reduced_map_motion: false, colorblind_map: false };
+const defaultPreferences = { visible_groups: preferenceGroups, default_days: 30, start_view: "us", auto_open_card: true, appearance: "system", map_view: "density", reduced_map_motion: false, colorblind_map: false };
 function validatePreferences(input = {}) {
   const groups = Array.isArray(input.visible_groups) ? input.visible_groups.filter(v => preferenceGroups.includes(v)) : defaultPreferences.visible_groups;
   return {
     visible_groups: [...new Set(groups)],
-    default_days: [1, 7, 30, 90, 180, 365].includes(Number(input.default_days)) ? Number(input.default_days) : 180,
+    default_days: [1, 7, 30, 90, 180, 365].includes(Number(input.default_days)) ? Number(input.default_days) : 30,
     start_view: ["us", "world", "my_area"].includes(input.start_view) ? input.start_view : "us",
     auto_open_card: input.auto_open_card !== false,
     appearance: ["system", "dark", "light"].includes(input.appearance) ? input.appearance : "system",
@@ -311,6 +311,24 @@ const server = http.createServer(async (req, res) => {
 
     if(req.method==="GET"&&url.pathname==="/api/account/sessions"){const{user,token}=await currentUser(req);await touchSession(req,user,token);const sid=jwtPayload(token).session_id;const rows=await supabase(`/rest/v1/app_sessions?user_id=eq.${user.id}&select=id,session_id,device,last_seen_at,created_at,revoked_at&order=last_seen_at.desc&limit=50`);return json(res,200,{sessions:rows.map(row=>({...row,current:row.session_id===sid,status:row.revoked_at?"revoked":"active"}))},origin)}
     if(req.method==="POST"&&url.pathname==="/api/account/signout-all"){rateLimit(req,3);const{user}=await currentUser(req);const result=await revokeUserSessions(user.id);await securityEvent(req,"signout_all",result.auth_revoked&&result.ledger_revoked?"success":"partial",user.id,result);return json(res,result.auth_revoked&&result.ledger_revoked?200:207,{message:result.auth_revoked&&result.ledger_revoked?"All sessions signed out":"Sign-out completed with a warning",revocation:result},origin)}
+    if(req.method==="POST"&&url.pathname==="/api/account/delete"){
+      rateLimit(req,2);const{user}=await activeUser(req),input=await body(req);
+      if(input.confirmation!=="DELETE"||input.acknowledge!==true)throw Object.assign(new Error("Type DELETE and acknowledge permanent deletion"),{status:400});
+      if(typeof input.password!=="string"||input.password.length<1)throw Object.assign(new Error("Your current password is required"),{status:400});
+      try{await authRequest("/token?grant_type=password",{email:user.email,password:input.password})}catch{throw Object.assign(new Error("Current password is incorrect"),{status:401})}
+      const actor=await activeUser(req);await assertSuperAdminContinuity(user.id,actor.roles);
+      const [sightingMedia,feedbackMedia]=await Promise.all([
+        supabase(`/rest/v1/sighting_media?uploader_id=eq.${user.id}&select=object_path`),
+        supabase(`/rest/v1/product_feedback_attachments?uploaded_by=eq.${user.id}&select=object_path`)
+      ]);
+      await auditRequest(req,user.id,"account.delete","profile",user.id,{self_service:true});
+      await supabase("/rest/v1/rpc/prepare_account_deletion",{method:"POST",data:{p_user_id:user.id}});
+      await authAdmin(`/users/${user.id}`,{method:"DELETE"});
+      const removals=[...sightingMedia.map(item=>["sighting-photos",item.object_path]),...feedbackMedia.map(item=>["feedback-attachments",item.object_path])];
+      const storage=await Promise.allSettled(removals.map(([bucket,path])=>fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,{method:"DELETE",headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`}})));
+      const storageWarnings=storage.filter(result=>result.status==="rejected"||(result.status==="fulfilled"&&!result.value.ok)).length;
+      return json(res,200,{message:"Account permanently deleted",storage_cleanup_pending:storageWarnings},origin);
+    }
     if(req.method==="GET"&&url.pathname==="/api/notifications"){const{user}=await activeUser(req);const rows=await supabase(`/rest/v1/notifications?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=100`);return json(res,200,{notifications:rows},origin)}
     if(req.method==="POST"&&url.pathname==="/api/notifications/read-all"){const{user}=await activeUser(req);await supabase(`/rest/v1/notifications?user_id=eq.${user.id}&read_at=is.null`,{method:"PATCH",data:{read_at:new Date().toISOString()},prefer:"return=minimal"});return json(res,204,null,origin)}
     if(req.method==="GET"&&url.pathname==="/api/locations/popular"){return json(res,200,{locations:[{id:"platte",label:"Central Platte River, Nebraska",latitude:40.82,longitude:-98.55,zoom:8,flyway:"Central"},{id:"sacramento",label:"Sacramento Valley, California",latitude:39.4,longitude:-121.8,zoom:7,flyway:"Pacific"},{id:"prairie",label:"Prairie Pothole Region",latitude:47.1,longitude:-99.2,zoom:6,flyway:"Central"},{id:"upper-mississippi",label:"Upper Mississippi River",latitude:43.3,longitude:-91.2,zoom:7,flyway:"Mississippi"},{id:"chesapeake",label:"Chesapeake Bay",latitude:38.6,longitude:-76.2,zoom:7,flyway:"Atlantic"},{id:"gulf",label:"Louisiana Gulf Coast",latitude:29.6,longitude:-91.2,zoom:7,flyway:"Mississippi"}]},origin)}

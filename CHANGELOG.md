@@ -1,5 +1,17 @@
 # FeatherMap changelog
 
+## 2026-07-31 — Dev 30-day map default
+
+- Changed the initial map timeframe from six months to the past 30 days for the web client and account preference fallback.
+- Retained the full timeframe selector and custom date-range support.
+
+## 2026-07-31 — Dev self-service account deletion
+
+- Added a guarded account-deletion flow requiring the current password, an exact `DELETE` confirmation, and an explicit permanence acknowledgement.
+- Protected the final active Super Administrator from accidental deletion and rate-limited deletion attempts.
+- Added transaction-safe cleanup for administrative references, retained anonymized audit history, removed user-owned data through database cascades, revoked the Auth identity and sessions, and cleaned up uploaded objects.
+- Added responsive danger-state styling, clear deletion scope, failure feedback, and automated coverage for the UI, API, and migration contract.
+
 ## 2026-07-31 — Dev session reliability, responsive controls, and category map iteration
 
 - Made Supabase authentication administration tolerant of empty and non-JSON responses, and changed suspension to report profile and session-revocation outcomes independently instead of returning a misleading generic error.
