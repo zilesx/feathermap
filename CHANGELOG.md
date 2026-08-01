@@ -1,5 +1,10 @@
 # FeatherMap changelog
 
+## 2026-07-31 — Dev light-theme close controls
+
+- Restored visible close glyphs on modal, panel, activity-card, and administrator-detail controls in explicit light mode and system-selected light mode.
+- Added consistent high-contrast hover and keyboard-focus states for close controls.
+
 ## 2026-07-31 — Dev 30-day map default
 
 - Changed the initial map timeframe from six months to the past 30 days for the web client and account preference fallback.
