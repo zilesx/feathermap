@@ -1,19 +1,25 @@
 "use client";
 
 import {FormEvent,useEffect,useState} from "react";
+import CountRangeSetup from "./count-range-setup";
 
 const API=process.env.NEXT_PUBLIC_API_URL||"https://api.feather-map.com";
 const slugify=(value:string)=>value.toLowerCase().trim().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
 
 type Category={slug:string;display_name:string;enabled:boolean;sort_order:number;color?:string;icon?:string};
 type Species={slug:string;display_name:string;category_slug:string;enabled:boolean;sort_order:number;scientific_name?:string;reference_url?:string;reference_source?:string;typical_flock_min?:number;typical_flock_median?:number;typical_flock_max?:number;occasional_flock_ceiling?:number;large_aggregation?:boolean;habitats?:string[];migration_profile?:{flyways?:string[]}};
+type Subspecies={slug:string;species_slug:string;display_name:string;scientific_name?:string;taxonomy_type:"subspecies"|"regional_population"|"hybrid"|"variant";regions?:string[];reference_url?:string;enabled:boolean;sort_order:number;archived_at?:string|null};
+type CountRange={slug:string;display_label:string;minimum_count:number;maximum_count:number|null;description?:string|null;sort_order:number;enabled:boolean;archived_at?:string|null};
 
 export default function CatalogSetup({visible,token,role}:{visible:boolean;token:string;role:string}){
   const[categories,setCategories]=useState<Category[]>([]);
   const[species,setSpecies]=useState<Species[]>([]);
+  const[subspecies,setSubspecies]=useState<Subspecies[]>([]);const[subspeciesDraft,setSubspeciesDraft]=useState<Partial<Subspecies>>({display_name:"",species_slug:"",taxonomy_type:"subspecies",enabled:true,sort_order:100});
+  const[countRanges,setCountRanges]=useState<CountRange[]>([]);
   const[categoryDraft,setCategoryDraft]=useState<Partial<Category>>({display_name:"",sort_order:100,color:"#7fa84a",icon:"bird",enabled:true});
   const[editingCategory,setEditingCategory]=useState<Category|null>(null);
   const[editingSpecies,setEditingSpecies]=useState<Species|null>(null);
+  const[editingSubspecies,setEditingSubspecies]=useState<Subspecies|null>(null);
   const[referenceSpecies,setReferenceSpecies]=useState<Species|null>(null);
   const[status,setStatus]=useState("");
 
@@ -24,7 +30,7 @@ export default function CatalogSetup({visible,token,role}:{visible:boolean;token
     return data;
   }
   async function load(){
-    try{const result=await request("/api/admin/species");setCategories(result.categories||[]);setSpecies(result.species||[]);setStatus("")}
+    try{const result=await request("/api/admin/species");setCategories(result.categories||[]);setSpecies(result.species||[]);setSubspecies(result.subspecies||[]);setCountRanges(result.count_ranges||[]);setSubspeciesDraft(current=>({...current,species_slug:current.species_slug||result.species?.[0]?.slug||""}));setStatus("")}
     catch(error){setStatus(error instanceof Error?error.message:"Could not load catalog")}
   }
   useEffect(()=>{if(visible&&token)void load()},[visible,token]);
@@ -32,7 +38,7 @@ export default function CatalogSetup({visible,token,role}:{visible:boolean;token
 
   async function save(path:string,payload:unknown,method="PATCH"){
     setStatus("Saving…");
-    try{await request(path,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});await load();setEditingCategory(null);setEditingSpecies(null);setStatus("Saved")}
+    try{await request(path,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});await load();setEditingCategory(null);setEditingSpecies(null);setEditingSubspecies(null);setStatus("Saved")}
     catch(error){setStatus(error instanceof Error?error.message:"Could not save")}
   }
   function createCategory(event:FormEvent){
@@ -41,10 +47,18 @@ export default function CatalogSetup({visible,token,role}:{visible:boolean;token
     void save("/api/admin/categories",{...categoryDraft,slug},"POST");
     setCategoryDraft({display_name:"",sort_order:100,color:"#7fa84a",icon:"bird",enabled:true});
   }
+  function createSubspecies(event:FormEvent){
+    event.preventDefault();
+    const slug=slugify(`${subspeciesDraft.species_slug}_${subspeciesDraft.display_name||""}`);
+    void save("/api/admin/subspecies",{...subspeciesDraft,slug,regions:subspeciesDraft.regions||[]},"POST");
+    setSubspeciesDraft({display_name:"",species_slug:species[0]?.slug||"",taxonomy_type:"subspecies",enabled:true,sort_order:100});
+  }
   function setFlyway(name:string,checked:boolean){if(!editingSpecies)return;const profile=editingSpecies.migration_profile||{};const flyways=profile.flyways||[];setEditingSpecies({...editingSpecies,migration_profile:{...profile,flyways:checked?[...new Set([...flyways,name])]:flyways.filter(value=>value!==name)}})}
 
-  return <><section className="admin-card catalog-setup">
+  return <><section className="admin-card catalog-setup"><CountRangeSetup ranges={countRanges} canManage={role==="admin"} onSave={save}/>
     <header className="catalog-heading"><div><h2>Catalog setup</h2><p>Manage the categories people filter by and the species available when reporting activity.</p></div>{status&&<span role="status">{status}</span>}</header>
+    {editingSubspecies&&<div className="admin-overlay" onClick={()=>setEditingSubspecies(null)}><section className="admin-detail catalog-editor" onClick={event=>event.stopPropagation()}><button className="detail-close" onClick={()=>setEditingSubspecies(null)} aria-label="Close subtype editor">×</button><h2>Edit subtype</h2><div className="detail-form"><label>Display name<input value={editingSubspecies.display_name} onChange={event=>setEditingSubspecies({...editingSubspecies,display_name:event.target.value})}/></label><label>Scientific name<input value={editingSubspecies.scientific_name||""} onChange={event=>setEditingSubspecies({...editingSubspecies,scientific_name:event.target.value})}/></label><label>Parent species<select value={editingSubspecies.species_slug} onChange={event=>setEditingSubspecies({...editingSubspecies,species_slug:event.target.value})}>{species.map(item=><option key={item.slug} value={item.slug}>{item.display_name}</option>)}</select></label><label>Type<select value={editingSubspecies.taxonomy_type} onChange={event=>setEditingSubspecies({...editingSubspecies,taxonomy_type:event.target.value as Subspecies["taxonomy_type"]})}><option value="subspecies">Subspecies</option><option value="regional_population">Regional population</option><option value="hybrid">Hybrid</option><option value="variant">Variant</option></select></label><label>Regions<input value={(editingSubspecies.regions||[]).join(", ")} onChange={event=>setEditingSubspecies({...editingSubspecies,regions:event.target.value.split(",").map(value=>value.trim()).filter(Boolean)})}/></label><label>Display order<input type="number" value={editingSubspecies.sort_order} onChange={event=>setEditingSubspecies({...editingSubspecies,sort_order:Number(event.target.value)})}/></label><label className="catalog-toggle"><input type="checkbox" checked={editingSubspecies.enabled&&!editingSubspecies.archived_at} onChange={event=>setEditingSubspecies({...editingSubspecies,enabled:event.target.checked,archived_at:event.target.checked?null:new Date().toISOString()})}/> Active and reportable</label></div><button className="primary" onClick={()=>save(`/api/admin/subspecies/${editingSubspecies.slug}`,editingSubspecies)}>Save subtype</button></section></div>}
+    <section className="catalog-section"><div className="catalog-section-heading"><div><h3>Subspecies and populations</h3><p>Add optional detail beneath a parent species without forcing it during reporting.</p></div><span>{subspecies.length} entries</span></div>{role==="admin"&&<form className="subspecies-create" onSubmit={createSubspecies}><label>Parent species<select required value={subspeciesDraft.species_slug||""} onChange={event=>setSubspeciesDraft({...subspeciesDraft,species_slug:event.target.value})}>{species.map(item=><option key={item.slug} value={item.slug}>{item.display_name}</option>)}</select></label><label>Display name<input required value={subspeciesDraft.display_name||""} onChange={event=>setSubspeciesDraft({...subspeciesDraft,display_name:event.target.value})}/></label><label>Type<select value={subspeciesDraft.taxonomy_type||"subspecies"} onChange={event=>setSubspeciesDraft({...subspeciesDraft,taxonomy_type:event.target.value as Subspecies["taxonomy_type"]})}><option value="subspecies">Subspecies</option><option value="regional_population">Regional population</option><option value="hybrid">Hybrid</option><option value="variant">Variant</option></select></label><label>Order<input type="number" value={subspeciesDraft.sort_order||100} onChange={event=>setSubspeciesDraft({...subspeciesDraft,sort_order:Number(event.target.value)})}/></label><button className="primary">Add entry</button></form>}<div className="catalog-grid species-grid">{subspecies.map(item=><article key={item.slug}><span><b>{item.display_name}</b><small>{species.find(parent=>parent.slug===item.species_slug)?.display_name||item.species_slug} · {item.taxonomy_type.replaceAll("_"," ")} · {item.enabled&&!item.archived_at?"Active":"Hidden"}</small></span>{role==="admin"?<button onClick={()=>setEditingSubspecies({...item})}>Edit</button>:<em>Read only</em>}</article>)}</div></section>
     <section className="catalog-section">
       <div className="catalog-section-heading"><div><h3>Bird categories</h3><p>Categories control map filters and organize the species catalog.</p></div></div>
       {role==="admin"&&<form className="catalog-create" onSubmit={createCategory}>

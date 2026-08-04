@@ -1,5 +1,25 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev configurable global bird-count ranges
+
+- Added administrator-managed global report-count ranges with editable labels, minimums, optional maximums, descriptions, ordering, visibility, and archival status.
+- Replaced the fixed reporting choices with responsive controls: up to eight active ranges render as fast-select buttons, while larger catalogs use a compact dropdown.
+- Preserved the legacy flock-band field for compatibility while storing immutable range labels, bounds, and estimated-bird snapshots on every new report.
+- Migrated existing reports into compatible historical snapshots and seeded ranges from small groups through mass concentrations exceeding 100,000 birds.
+- Added API-side range validation, overlap protection, catalog-management permissions, audit events, and safe archival instead of destructive deletion.
+- Updated privacy-safe heatmap aggregation and local marker sizing to account for configured bird volumes.
+
+## 2026-07-31 — Dev taxonomy, private harvest journal, and map UX safeguards
+
+- Enforced each signed-in user's saved default map history on map initialization while retaining the 30-day fallback.
+- Added an application confirmation step before deleting a report and replaced the misleading owner action button with a noninteractive ownership status.
+- Kept the activity summary card clear of the map legend across desktop and narrow layouts.
+- Expanded the catalog with optional subspecies, regional populations, hybrids, and variants beneath parent species, including administrator management and nested map filters.
+- Added optional subtype selection to bird reports without forcing users to identify beyond the parent species.
+- Added a private harvest journal that records outings, birds observed, hunter count, duration, multiple species/subspecies harvest lines, notes, and private harvest-rate statistics separately from public sightings.
+- Extended the semantic theme surface model so modal headers, overlays, controls, danger states, and system-selected light mode use consistent contrast.
+- Reinforced Platform feature-card layout constraints so controls and save actions remain inside their cards.
+
 ## 2026-07-31 — Dev light-theme close controls
 
 - Restored visible close glyphs on modal, panel, activity-card, and administrator-detail controls in explicit light mode and system-selected light mode.
