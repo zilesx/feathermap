@@ -57,7 +57,7 @@
 .map-canvas :is(.heat-layer,.protected-report-dots){pointer-events:none!important}.map-canvas :is(.report-density-dot,.localized-hotspot,.map-cluster){touch-action:none}.map-canvas.map-moving :is(.report-density-dot,.localized-hotspot,.density-dot){transition:none!important}
 .activity-canvas{position:absolute;inset:0;z-index:4;pointer-events:none;transition:opacity .18s ease}.view-density{display:none!important}.map-canvas.map-moving .activity-canvas{will-change:contents}
 .delete-account-launcher{width:auto!important;max-width:calc(100vw - 4rem)!important;min-width:11rem!important;min-height:2.5rem!important;padding:.55rem 1rem!important;bottom:max(7.5rem,env(safe-area-inset-bottom))!important;border-radius:.5rem!important}
-.banded-marker{display:grid!important;place-items:center!important;color:#fff!important;font-size:15px!important;line-height:1!important}
+.banded-marker{display:none!important}
 @media(max-width:600px){.delete-account-launcher{max-width:calc(100vw - 2rem)!important;min-width:10rem!important;bottom:max(6.75rem,env(safe-area-inset-bottom))!important}}
 
 /* 2026-08-04 profile and composable-filter correction. */
@@ -77,14 +77,20 @@
 .profile-preferences h3{margin:3px 0 0}.profile-preferences .preference-block{padding:0;border:0}.profile-preferences .preference-row{margin:0;padding:14px 0;border-top:1px solid var(--border-soft)}
 .account-card{min-height:0!important}
 .account-edit-modal {
-  padding-bottom: 2rem;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
   overflow-x: hidden;
+  isolation: isolate;
+  background: var(--surface-panel) !important;
+  background-clip: padding-box;
 }
 
 .account-edit-modal > .modal-head {
   position: sticky;
-  top: 0;
-  z-index: 8;
+  top: -24px;
+  z-index: 30;
+  background: var(--surface-panel) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 1px 0 var(--border-strong), 0 12px 20px color-mix(in srgb, var(--surface-panel) 92%, transparent);
 }
 
 .profile-danger-zone {
@@ -122,23 +128,36 @@
 .banded-map-star {
   position: absolute;
   z-index: 17;
-  width: 38px;
-  height: 38px;
-  padding: 9px;
+  width: 46px;
+  height: 46px;
+  padding: 8px;
   transform: translate(-50%, -50%);
   border: 0;
   background: transparent;
-  touch-action: none;
+  touch-action: manipulation;
+  cursor: pointer;
 }
 
 .banded-map-star::before {
-  content: "";
-  display: block;
-  width: 20px;
-  height: 20px;
-  background: var(--category-color, #ffd400);
-  clip-path: polygon(50% 0%,61% 34%,98% 35%,68% 56%,79% 92%,50% 71%,21% 92%,32% 56%,2% 35%,39% 34%);
-  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 1px 2px #06110b);
+  content: "★";
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--category-color, #ffb000);
+  font: 900 29px/1 Arial, sans-serif;
+  -webkit-text-stroke: 3px #fff;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 0 1px #07100b) drop-shadow(0 3px 4px #000c);
+  transition: transform .14s ease, filter .14s ease;
+}
+
+.banded-map-star:hover::before,
+.banded-map-star:focus-visible::before { transform: scale(1.18); filter: drop-shadow(0 0 2px #fff) drop-shadow(0 3px 6px #000e); }
+.banded-map-star:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; border-radius: 50%; }
+
+@media (max-width: 600px) {
+  .account-edit-modal > .modal-head { top: -19px; }
 }
 
 @media (max-width: 640px) {

@@ -467,3 +467,9 @@ This changelog is organized around explicit product build approvals and major de
 - Promoted banded encounters to category-colored star markers with accessible, touch-friendly targets.
 - Added actionable photo-storage errors while preserving the saved report and client-side retry flow.
 - Reworked light-theme admin surfaces to use shared semantic color tokens.
+# 2026-08-04 — Banded marker and profile modal polish
+
+- Replaced duplicate circular banded-report markers with one consistent star marker at every zoom.
+- Increased star contrast with category color, a substantial white outline, and a dark map-safe shadow.
+- Added a larger touch target plus visible hover and keyboard-focus feedback without turning the star into a circle.
+- Made the Edit Profile header fully opaque and isolated its scrolling content so fields no longer bleed above it.
