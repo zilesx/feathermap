@@ -16,7 +16,7 @@ function cors(origin) {
   const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : "";
   return {
     ...(allowed ? { "Access-Control-Allow-Origin": allowed } : {}),
-    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-FeatherMap-Version, X-FeatherMap-Platform",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Vary": "Origin",
   };
@@ -400,6 +400,15 @@ const server = http.createServer(async (req, res) => {
       }, prefer: "return=representation" });
       const nearby=await supabase(`/rest/v1/sightings?id=neq.${rows[0].id}&species_slug=eq.${encodeURIComponent(input.species)}&status=eq.active&occurred_at=gte.${encodeURIComponent(new Date(Date.now()-3*3600000).toISOString())}&exact_latitude=gte.${latitude-.18}&exact_latitude=lte.${latitude+.18}&exact_longitude=gte.${longitude-.22}&exact_longitude=lte.${longitude+.22}&select=id,exact_latitude,exact_longitude&limit=5`);for(const other of nearby){const similarity=Math.max(60,Math.round(100-Math.hypot((other.exact_latitude-latitude)*69,(other.exact_longitude-longitude)*55)*4));const pair=[rows[0].id,other.id].sort();await supabase("/rest/v1/duplicate_candidates?on_conflict=sighting_a,sighting_b",{method:"POST",data:{sighting_a:pair[0],sighting_b:pair[1],similarity},prefer:"resolution=ignore-duplicates,return=minimal"});await supabase("/rest/v1/moderation_cases",{method:"POST",data:{content_type:"sighting",content_id:rows[0].id,reason:`possible_duplicate:${other.id}`},prefer:"return=minimal"});}
       if(clientReportId)await supabase("/rest/v1/client_sync_events",{method:"POST",data:{user_id:user.id,client_report_id:clientReportId,client_version:String(req.headers["x-feathermap-version"]||""),platform:String(req.headers["x-feathermap-platform"]||"web"),event_type:"submitted"},prefer:"return=minimal"});await userActivity(req,user.id,"sighting.create","sighting",rows[0].id,"success",null,{species:input.species,subspecies:subspeciesSlug,count_range:countRange.slug,flock_label:countRange.display_label,estimated_birds:estimate,occurred_at:occurredAt.toISOString(),submitted_at:rows[0].submitted_at,location_source:locationSource,delay_minutes:Math.max(0,Math.round((Date.now()-occurredAt.getTime())/60000))});return json(res,201,{id:rows[0].id,expires_at:rows[0].expires_at},origin);
+    }
+
+    if(req.method==="GET"&&url.pathname==="/api/banded-birds"){
+      const{user}=await activeUser(req);const rows=await supabase(`/rest/v1/banded_bird_reports?reporter_id=eq.${user.id}&select=id,species_slug,subspecies_slug,band_number,band_type,band_color,encounter_type,occurred_at,notes,created_at&order=occurred_at.desc&limit=250`);return json(res,200,{reports:rows},origin)
+    }
+    if(req.method==="POST"&&url.pathname==="/api/banded-birds"){
+      rateLimit(req,10);const{user}=await activeUser(req),input=await body(req),occurredAt=new Date(input.occurred_at),latitude=Number(input.latitude),longitude=Number(input.longitude),encounter=String(input.encounter_type||"observed"),bandType=String(input.band_type||"unknown");
+      if(!Number.isFinite(occurredAt.getTime())||occurredAt>Date.now()+300000)throw Object.assign(new Error("Choose a valid encounter date"),{status:400});if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||latitude<-90||latitude>90||longitude<-180||longitude>180)throw Object.assign(new Error("Choose a valid encounter location"),{status:400});if(!["observed","photographed","recovered","harvested"].includes(encounter))throw Object.assign(new Error("Choose a valid encounter type"),{status:400});if(!["metal","color","neck_collar","wing_tag","unknown"].includes(bandType))throw Object.assign(new Error("Choose a valid band type"),{status:400});
+      const species=await supabase(`/rest/v1/species_catalog?slug=eq.${encodeURIComponent(input.species_slug)}&enabled=eq.true&select=slug`);if(!species.length)throw Object.assign(new Error("Choose an available species"),{status:400});const rows=await supabase("/rest/v1/banded_bird_reports",{method:"POST",data:{reporter_id:user.id,species_slug:input.species_slug,subspecies_slug:input.subspecies_slug||null,band_number:String(input.band_number||"").trim().slice(0,80)||null,band_type:bandType,band_color:String(input.band_color||"").trim().slice(0,40)||null,encounter_type:encounter,occurred_at:occurredAt.toISOString(),exact_latitude:latitude,exact_longitude:longitude,notes:String(input.notes||"").trim().slice(0,2000)||null},prefer:"return=representation"});await userActivity(req,user.id,"banded_bird.create","banded_bird_report",rows[0].id);return json(res,201,{id:rows[0].id},origin)
     }
 
     if(req.method==="GET"&&url.pathname==="/api/harvests"){

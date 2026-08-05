@@ -41,3 +41,14 @@
 
 @media(max-width:1100px){.report-context-panel{left:12px;border-right:1px solid var(--border-strong);border-radius:12px}.report-context-panel+.map .modal-wrap .modal{border-radius:12px}}
 @media(max-width:720px){.report-context-panel{position:fixed;inset:8px 12px auto;width:auto;border-radius:12px}.report-subspecies-floating{bottom:88px}}
+
+/* Filter, location, marker, and band-report polish. */
+.taxonomy-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0 10px}.taxonomy-actions button{width:auto!important;padding:6px 10px!important}.taxonomy-filter[open] summary{border-bottom:1px solid var(--border-strong)}
+.report-context-panel>label:has(.report-place-search),.report-context-panel>.report-place-results{display:none!important}.report-context-panel>label:has(>select){font-size:0}.report-context-panel>label:has(>select)::before{content:"Saved locations";font-size:9px}.report-context-panel>label:has(>select)>select{font-size:9px}.location-modal>h3:first-of-type,.location-modal>h3:first-of-type+.location-list{display:none!important}
+.view-density .density-dot{min-width:9px;min-height:9px;mix-blend-mode:normal!important;opacity:1!important;border:2px solid #fff!important;background:var(--category-color,#CC3311)!important;box-shadow:0 0 0 1px #07100b,0 2px 7px #000b!important}
+.report-density-dot{min-width:14px;min-height:14px;mix-blend-mode:normal!important;opacity:1!important;border:2px solid #fff!important;box-shadow:0 0 0 1px #07100b,0 2px 7px #000b!important}
+.localized-hotspot{border:2px solid #fff!important;box-shadow:0 0 0 1px #07100b,0 3px 9px #000c!important}
+.report-density-dot.selected,.localized-hotspot.selected{outline:4px solid #ffed00!important;outline-offset:2px!important}
+.banded-layer{z-index:64}.banded-modal{width:min(700px,calc(100vw - 24px))}.banded-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.banded-grid label,.banded-modal>label{display:grid;gap:6px;color:var(--text-secondary);font-size:10px}.banded-grid :is(input,select),.banded-modal textarea{box-sizing:border-box;width:100%;min-width:0}
+@media(max-width:650px){.banded-grid{grid-template-columns:1fr}}
+.species-picker-closed .modal .choice-grid:first-of-type{display:none!important}.species-selection-summary{position:fixed;z-index:38;left:50%;top:142px;transform:translateX(-50%);width:min(440px,calc(100vw - 80px));display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border:1px solid var(--green);border-radius:8px;background:var(--surface-raised);color:var(--text-primary);box-shadow:0 7px 22px var(--shadow-color)}.species-selection-summary span{font-weight:800}.species-selection-summary small{color:var(--text-secondary)}

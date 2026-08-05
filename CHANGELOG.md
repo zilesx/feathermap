@@ -1,5 +1,18 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev reporting, filters, map interaction, and banded birds
+
+- Fixed report submission preflight failures by allowing FeatherMap platform and version headers through API CORS.
+- Made category filters drive aggregate map cells, cleared incompatible taxonomy selections, and suppressed stale aggregate dots for empty or subspecies-filtered results.
+- Standardized every zoom level on administrator-managed category colors with saturated markers, white halos, dark outlines, and stronger selected states.
+- Added smoother cursor-anchored wheel zooming and delayed aggregate refreshes until zoom gestures settle.
+- Replaced the oversized taxonomy action with an All checkbox, added explicit dismissal, and supported Escape and outside-click closure.
+- Collapsed the reporting species list after selection and added a compact selection summary that reopens the picker.
+- Removed Popular areas and place search from the active reporting workflow while retaining current location, map selection, and saved locations.
+- Formatted all bird-count choices from numeric bounds using range dashes and thousands separators.
+- Added privacy-protected banded-bird reports, a user entry form, API endpoints, and database schema.
+- Added a synthetic flyway-oriented bridge-data generator through August 4, 2026 and updated the default category palette for improved contrast.
+
 ## 2026-08-04 — Dev account-creation reliability fix
 
 - Corrected new-account initialization so the required profile is created before the application session ledger is written.
