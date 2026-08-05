@@ -76,3 +76,72 @@
 .profile-preferences{display:grid;gap:14px;margin:20px 0;padding:18px;border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-panel)}
 .profile-preferences h3{margin:3px 0 0}.profile-preferences .preference-block{padding:0;border:0}.profile-preferences .preference-row{margin:0;padding:14px 0;border-top:1px solid var(--border-soft)}
 .account-card{min-height:0!important}
+.account-edit-modal {
+  padding-bottom: 2rem;
+  overflow-x: hidden;
+}
+
+.account-edit-modal > .modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+}
+
+.profile-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.25rem 0 5rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 55%, var(--border));
+  border-radius: .75rem;
+}
+
+.profile-danger-zone small { display: block; color: var(--text-muted); }
+
+.form-status.success { border-color: var(--accent); color: var(--accent-strong); }
+
+.harvest-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+  margin: 1rem 0;
+}
+
+.harvest-summary-grid > div,
+.harvest-journal-entry {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  background: var(--surface-raised);
+}
+
+.harvest-journal-entry { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+
+.banded-map-star {
+  position: absolute;
+  z-index: 17;
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  touch-action: none;
+}
+
+.banded-map-star::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: var(--category-color, #ffd400);
+  clip-path: polygon(50% 0%,61% 34%,98% 35%,68% 56%,79% 92%,50% 71%,21% 92%,32% 56%,2% 35%,39% 34%);
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 1px 2px #06110b);
+}
+
+@media (max-width: 640px) {
+  .profile-danger-zone, .harvest-journal-entry { align-items: stretch; flex-direction: column; }
+  .harvest-summary-grid { grid-template-columns: 1fr; }
+}

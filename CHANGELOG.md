@@ -457,3 +457,13 @@ This changelog is organized around explicit product build approvals and major de
 - Defined Flyway as a privacy-first migratory-bird activity application for iOS, Android, and web.
 - Established randomized activity zones so reports do not expose exact hunting locations, blinds, or routes.
 - Created the initial responsive map, reporting workflow, activity cards, and community-confirmation concept.
+# 2026-08-04 — Profile, membership, journal, and map identity
+
+- Prevented account action controls from overlapping profile and account sub-modals.
+- Added explicit profile-save progress and durable success/error feedback.
+- Added profile summary data for membership, account dates, reports, banded encounters, private outings, unread notifications, and recent activity.
+- Added configurable membership levels, deliberately separated from RBAC, with future payment-provider identifiers.
+- Added harvest-journal loading and deletion support while preserving the existing private harvest workflow.
+- Promoted banded encounters to category-colored star markers with accessible, touch-friendly targets.
+- Added actionable photo-storage errors while preserving the saved report and client-side retry flow.
+- Reworked light-theme admin surfaces to use shared semantic color tokens.

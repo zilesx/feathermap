@@ -17,6 +17,7 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
  const[operations,setOperations]=useState<any>({totals:{},recent_failures:[]});
  const[roles,setRoles]=useState<any[]>([]);
  const[permissions,setPermissions]=useState<any[]>([]);
+ const[memberships,setMemberships]=useState<any[]>([]);
  const[selectedRole,setSelectedRole]=useState<any>(null);
  const[status,setStatus]=useState("");
  const[errors,setErrors]=useState<Record<string,string>>({});
@@ -29,7 +30,8 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
   const results=await Promise.allSettled([
    call("/api/admin/features",token),
    call("/api/admin/operations/sync",token),
-   call("/api/admin/roles",token)
+   call("/api/admin/roles",token),
+   call("/api/admin/memberships",token)
   ]);
   const nextErrors:Record<string,string>={};
   if(results[0].status==="fulfilled"){
@@ -41,6 +43,8 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
   else nextErrors.operations=results[1].reason?.message||"Could not load synchronization health";
   if(results[2].status==="fulfilled"){setRoles(results[2].value.roles||[]);setPermissions(results[2].value.permissions||[])}
   else nextErrors.roles=results[2].reason?.message||"Could not load roles";
+  if(results[3].status==="fulfilled")setMemberships(results[3].value.levels||[]);
+  else nextErrors.memberships=results[3].reason?.message||"Could not load membership levels";
   setErrors(nextErrors);
   setStatus(Object.keys(nextErrors).length?"Some platform controls could not be loaded.":"");
  }
@@ -54,6 +58,11 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
    await load();
    setStatus("Saved");
   }catch(error){setStatus(error instanceof Error?error.message:"Could not save")}
+ }
+
+ async function saveMembership(level:any){
+  setStatus("Saving membership level…");
+  try{await call(`/api/admin/memberships/${level.key}`,token,{method:"PATCH",body:JSON.stringify(level)});await load();setStatus("Membership level saved")}catch(error){setStatus(error instanceof Error?error.message:"Could not save membership level")}
  }
 
  async function saveOverride(event:React.FormEvent){
@@ -82,6 +91,19 @@ export default function PlatformControls({visible,token}:{visible:boolean;token:
    {errors.roles?<div className="platform-error">{errors.roles}</div>:roles.length===0?<div className="platform-empty">No role definitions are available.</div>:<div className="role-definition-grid">
     {roles.map(role=><button type="button" className="role-definition-card" key={role.key} onClick={()=>setSelectedRole(role)} aria-label={`View permissions for ${role.display_name}`}><b>{role.display_name}</b><span>{role.description}</span><small>{role.permissions.length} permissions · View details</small></button>)}
    </div>}
+  </section>
+  <section className="platform-section">
+   <h3>Membership levels</h3>
+   <p>Membership is separate from administrative access. Payment-provider identifiers are stored for future monetization but do not grant staff permissions.</p>
+   {errors.memberships?<div className="platform-error">{errors.memberships}</div>:<div className="membership-level-grid">{memberships.map((level,index)=><article key={level.key}>
+    <label>Name<input value={level.display_name} onChange={event=>setMemberships(items=>items.map((item,i)=>i===index?{...item,display_name:event.target.value}:item))}/></label>
+    <label>Description<textarea value={level.description||""} onChange={event=>setMemberships(items=>items.map((item,i)=>i===index?{...item,description:event.target.value}:item))}/></label>
+    <div><label>Badge color<input type="color" value={level.badge_color||"#9bdc28"} onChange={event=>setMemberships(items=>items.map((item,i)=>i===index?{...item,badge_color:event.target.value}:item))}/></label><label>Order<input type="number" value={level.sort_order||100} onChange={event=>setMemberships(items=>items.map((item,i)=>i===index?{...item,sort_order:Number(event.target.value)}:item))}/></label></div>
+    <label><input type="checkbox" checked={level.active!==false} onChange={event=>setMemberships(items=>items.map((item,i)=>i===index?{...item,active:event.target.checked}:item))}/> Active</label>
+    <label>External product ID<input value={level.external_product_id||""} onChange={event=>setMemberships(items=>items.map((item,i)=>i===index?{...item,external_product_id:event.target.value}:item))}/></label>
+    <label>External price ID<input value={level.external_price_id||""} onChange={event=>setMemberships(items=>items.map((item,i)=>i===index?{...item,external_price_id:event.target.value}:item))}/></label>
+    <button className="primary" onClick={()=>saveMembership(level)}>Save membership</button>
+   </article>)}</div>}
   </section>
   <section className="platform-section">
    <h3>Feature flags</h3>

@@ -55,3 +55,47 @@ body:has(.account-card) .appearance-control{display:flex}
 :root[data-theme="light"] :is(.shield p,.privacy span,.confirm>span,.comment-list p,.report-note p){color:var(--text-secondary)!important}
 :root[data-theme="light"] :is(.account-card .preferences-form,.account-card .preference-block){box-shadow:0 10px 30px #26382c14}
 @media(prefers-color-scheme:light){:root[data-theme="system"] :is(.preferences-form,.preference-block,.preference-row,.detail-hero,.detail-grid,.report-note,.comments,.comment-list article,.comment-compose,.detail-actions,.stats){background-color:var(--surface-raised)!important;color:var(--text-primary)!important;border-color:var(--border-strong)!important}:root[data-theme="system"] :is(.shield,.privacy){background-color:color-mix(in srgb,var(--green) 8%,var(--surface-raised))!important;color:var(--text-primary)!important;border-color:color-mix(in srgb,var(--green) 35%,var(--border-strong))!important}:root[data-theme="system"] :is(.shield p,.privacy span,.confirm>span,.comment-list p,.report-note p){color:var(--text-secondary)!important}}
+/* Theme surfaces must use semantic tokens; this prevents dark component CSS
+   from leaking into the light appearance. */
+:root[data-theme="light"] :is(
+  .admin-card,
+  .settings-card,
+  .settings-section,
+  .settings-heading,
+  .settings-actions,
+  .platform-controls,
+  .platform-section,
+  .platform-section article,
+  .feature-grid article,
+  .feedback-admin-list article,
+  .feedback-original,
+  .feedback-thread article,
+  .admin-detail,
+  .moderation-detail,
+  .content-snapshot,
+  .case-report,
+  .user-context
+) {
+  background: var(--surface-panel) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+:root[data-theme="light"] :is(
+  .admin-card,
+  .platform-controls,
+  .feedback-admin-list,
+  .settings-card
+) :is(h2, h3, b, strong, p, span, small, label, time) {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="light"] :is(.admin-card, .platform-controls, .feedback-admin-list) button:not(.primary):not(.danger) {
+  background: var(--surface-raised) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+:root[data-theme="light"] :is(.settings-heading, .settings-actions) {
+  background: var(--surface-raised) !important;
+}
