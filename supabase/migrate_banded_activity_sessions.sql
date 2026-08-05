@@ -1,3 +1,5 @@
+alter type public.sighting_behavior add value if not exists 'banded_encounter';
+
 begin;
 
 alter table public.banded_bird_reports

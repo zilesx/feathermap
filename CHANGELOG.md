@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev profile, taxonomy filters, and band-report correction
+
+- Kept the account header and close control visible while scrolling and reserved internal card space for the responsive account-action footer.
+- Replaced internal count-range slugs with formatted labels using en dashes, thousands separators, tabular numbers, and accessible bird-count labels.
+- Rebuilt species refinement around explicit all, none, and partial states so individual selections no longer clear or lock the entire category.
+- Replaced the oversized species-filter Done control with a compact close button in the sticky refinement header.
+- Positioned species refinement below the independent timeframe control so both filters remain available and retain their state.
+- Added Category → Species → optional Subspecies hierarchy to banded-bird reporting with dependent resets and server-side relationship validation.
+- Added the dedicated `banded_encounter` sighting behavior and stopped passing invalid encounter types into the sighting behavior enum.
+- Added friendly submission states and double-submit protection to banded-bird reports.
+
 ## 2026-08-04 — Dev map continuity, banded activity, and session policy
 
 - Kept privacy-safe aggregate activity visible through regional zooms so reports no longer disappear at the former zoom-7 handoff.

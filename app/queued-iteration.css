@@ -59,3 +59,15 @@
 .delete-account-launcher{width:auto!important;max-width:calc(100vw - 4rem)!important;min-width:11rem!important;min-height:2.5rem!important;padding:.55rem 1rem!important;bottom:max(7.5rem,env(safe-area-inset-bottom))!important;border-radius:.5rem!important}
 .banded-marker{display:grid!important;place-items:center!important;color:#fff!important;font-size:15px!important;line-height:1!important}
 @media(max-width:600px){.delete-account-launcher{max-width:calc(100vw - 2rem)!important;min-width:10rem!important;bottom:max(6.75rem,env(safe-area-inset-bottom))!important}}
+
+/* 2026-08-04 profile and composable-filter correction. */
+.content-panel:has(.account-card){display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden!important;padding-bottom:0!important}
+.content-panel:has(.account-card)>.panel-head{position:sticky;top:0;z-index:20;background:var(--surface-header)!important;backdrop-filter:blur(10px)}
+.content-panel:has(.account-card)>.account-card{overflow:auto;padding-bottom:150px!important;scroll-padding-bottom:150px}
+.app-shell:has(.account-card)>.account-quick-actions{z-index:22;bottom:calc(94px + env(safe-area-inset-bottom))!important;width:min(620px,calc(100% - 72px))!important;box-sizing:border-box;background:var(--surface-header)!important;border-color:var(--border-strong)!important;box-shadow:0 -10px 30px var(--shadow-color)!important}
+.taxonomy-filter summary{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-panel)}
+.taxonomy-filter summary::marker{content:""}.taxonomy-close{display:grid!important;place-items:center;width:26px!important;height:26px!important;min-width:26px;padding:0!important;border-radius:50%!important;font-size:17px!important;line-height:1!important}
+.taxonomy-actions{position:sticky;top:0;z-index:2;background:var(--surface-panel)}
+.timeframe-control{z-index:15!important}.taxonomy-filter{z-index:14!important;top:184px!important}
+.choice-grid.four button,.report-count-buttons button{font-size:11px!important;font-weight:750!important;font-variant-numeric:tabular-nums lining-nums;letter-spacing:.01em}
+@media(max-width:720px){.content-panel:has(.account-card)>.account-card{padding-bottom:205px!important;scroll-padding-bottom:205px}.app-shell:has(.account-card)>.account-quick-actions{bottom:calc(78px + env(safe-area-inset-bottom))!important;width:calc(100% - 44px)!important}.taxonomy-filter{top:218px!important}.timeframe-control{z-index:15!important}}
