@@ -219,13 +219,12 @@ function validateSighting(input,maxAgeDays=7) {
 }
 
 const preferenceGroups = ["ducks", "geese", "cranes", "doves", "shorebirds", "upland", "other"];
-const defaultPreferences = { visible_groups: preferenceGroups, default_days: 30, start_view: "us", auto_open_card: true, appearance: "system", map_view: "density", reduced_map_motion: false, colorblind_map: false };
+const defaultPreferences = { visible_groups: preferenceGroups, default_days: 30, auto_open_card: true, appearance: "system", map_view: "density", reduced_map_motion: false, colorblind_map: false };
 function validatePreferences(input = {}) {
   const groups = Array.isArray(input.visible_groups) ? input.visible_groups.filter(v => preferenceGroups.includes(v)) : defaultPreferences.visible_groups;
   return {
     visible_groups: [...new Set(groups)],
     default_days: [1, 7, 30, 90, 180, 365].includes(Number(input.default_days)) ? Number(input.default_days) : 30,
-    start_view: ["us", "world", "my_area"].includes(input.start_view) ? input.start_view : "us",
     auto_open_card: input.auto_open_card !== false,
     appearance: ["system", "dark", "light"].includes(input.appearance) ? input.appearance : "system",
     map_view: "density",

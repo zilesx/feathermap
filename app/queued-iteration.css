@@ -71,3 +71,8 @@
 .timeframe-control{z-index:15!important}.taxonomy-filter{z-index:14!important;top:184px!important}
 .choice-grid.four button,.report-count-buttons button{font-size:11px!important;font-weight:750!important;font-variant-numeric:tabular-nums lining-nums;letter-spacing:.01em}
 @media(max-width:720px){.content-panel:has(.account-card)>.account-card{padding-bottom:205px!important;scroll-padding-bottom:205px}.app-shell:has(.account-card)>.account-quick-actions{bottom:calc(78px + env(safe-area-inset-bottom))!important;width:calc(100% - 44px)!important}.taxonomy-filter{top:218px!important}.timeframe-control{z-index:15!important}}
+
+/* Profile preferences are edited and saved with the rest of the profile. */
+.profile-preferences{display:grid;gap:14px;margin:20px 0;padding:18px;border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-panel)}
+.profile-preferences h3{margin:3px 0 0}.profile-preferences .preference-block{padding:0;border:0}.profile-preferences .preference-row{margin:0;padding:14px 0;border-top:1px solid var(--border-soft)}
+.account-card{min-height:0!important}

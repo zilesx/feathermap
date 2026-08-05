@@ -1,5 +1,14 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev saved profile preferences and realistic date coverage
+
+- Removed the obsolete estimated-activity map legend.
+- Moved bird visibility, default history, and automatic activity-card preferences into Edit profile and saved them with the profile form.
+- Removed the Starting map preference and stopped automatically relocating the map after profile preferences load.
+- Simplified the account overview so it presents identity and account navigation instead of unsaved-looking controls.
+- Added an idempotent, removable synthetic gap-fill dataset that measures monthly coverage before adding records.
+- Weighted synthetic volume toward spring and fall migration, selected species using their configured seasonal profiles, and constrained locations to established flyway nodes.
+
 ## 2026-08-04 — Dev profile, taxonomy filters, and band-report correction
 
 - Kept the account header and close control visible while scrolling and reserved internal card space for the responsive account-action footer.
