@@ -164,6 +164,18 @@ function publicName(profile){if(profile?.show_attribution===false)return"Feather
 function observedWeather(input){if(!input||typeof input!=="object"||Array.isArray(input))return null;const allowed={sky:["clear","partly_cloudy","overcast","fog"],precipitation:["none","drizzle","rain","snow","sleet"],wind:["calm","light","moderate","strong"],wind_direction:["N","NE","E","SE","S","SW","W","NW"],visibility:["good","moderate","poor"]};const result={};for(const[key,values]of Object.entries(allowed)){if(input[key]&&values.includes(input[key]))result[key]=input[key]}const temperature=Number(input.temperature);if(Number.isFinite(temperature)&&temperature>=-100&&temperature<=150)result.temperature=temperature;if(["F","C"].includes(input.temperature_unit))result.temperature_unit=input.temperature_unit;return Object.keys(result).length?result:null}
 function requestedRange(url,defaultDays=7){const endRaw=url.searchParams.get("end"),startRaw=url.searchParams.get("start");const end=endRaw?new Date(endRaw):new Date();const days=Math.min(365,Math.max(1,Number(url.searchParams.get("days"))||defaultDays));const start=startRaw?new Date(startRaw):new Date(end.getTime()-days*86400000);if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||start>end||end.getTime()>Date.now()+300000)throw Object.assign(new Error("Invalid date range"),{status:400});if(end.getTime()-start.getTime()>365*86400000)throw Object.assign(new Error("Date range cannot exceed one year"),{status:400});return{start,end}}
 async function rememberSession(req,result){const token=result?.access_token,user=result?.user;if(!token||!user?.id)return;const sid=jwtPayload(token).session_id||crypto.createHash("sha256").update(token).digest("hex").slice(0,36);const ua=String(req.headers["user-agent"]||"Unknown device").slice(0,180);await supabase("/rest/v1/app_sessions?on_conflict=user_id,session_id",{method:"POST",data:{user_id:user.id,session_id:sid,device:ua,ip_hash:ipHash(req),last_seen_at:new Date().toISOString(),revoked_at:null},prefer:"resolution=merge-duplicates,return=minimal"});}
+async function initializeSignup(req,result){
+  const user=result?.user;
+  if(!user?.id)return;
+  try{
+    await ensureProfile(user);
+    await rememberSession(req,result);
+  }catch(error){
+    try{await authAdmin(`/users/${user.id}`,{method:"DELETE"})}catch(cleanupError){console.error("signup-cleanup",cleanupError.message)}
+    console.error("signup-initialization",error.message);
+    throw Object.assign(new Error("Account setup failed. Please try again."),{status:500,code:"account_setup_failed"});
+  }
+}
 const sessionTouches=new Map();
 async function touchSession(req,user,token){const sid=jwtPayload(token).session_id||crypto.createHash("sha256").update(token).digest("hex").slice(0,36),key=`${user.id}:${sid}`,now=Date.now();if(now-(sessionTouches.get(key)||0)<60000)return;sessionTouches.set(key,now);await rememberSession(req,{access_token:token,user});if(sessionTouches.size>10000)sessionTouches.clear()}
 async function weatherSnapshot(latitude,longitude){try{const lat=Math.round(latitude*4)/4,lon=Math.round(longitude*4)/4;const response=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1`);if(!response.ok)return null;const w=await response.json();return{captured_at:w.current?.time,temperature:w.current?.temperature_2m,temperature_unit:w.current_units?.temperature_2m,wind_speed:w.current?.wind_speed_10m,wind_unit:w.current_units?.wind_speed_10m,wind_direction:w.current?.wind_direction_10m,precipitation:w.current?.precipitation,cloud_cover:w.current?.cloud_cover,pressure_msl:w.current?.pressure_msl,sunrise:w.daily?.sunrise?.[0],sunset:w.daily?.sunset?.[0],source:"Open-Meteo",location_precision:"regional"};}catch{return null}}
@@ -249,7 +261,7 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       if (!input.email || typeof input.password !== "string" || input.password.length < 8) throw Object.assign(new Error("A valid email and 8-character password are required"), { status: 400 });
       const result = await authRequest("/signup", { email: input.email, password: input.password, data: { display_name: input.display_name || "Hunter" } });
-      await rememberSession(req,result);
+      await initializeSignup(req,result);
       return json(res, 201, result, origin);
     }
 

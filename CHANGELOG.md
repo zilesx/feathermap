@@ -1,5 +1,11 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev account-creation reliability fix
+
+- Corrected new-account initialization so the required profile is created before the application session ledger is written.
+- Added cleanup for partially initialized authentication accounts and replaced leaked database constraint errors with a friendly account-setup message.
+- Added regression coverage that enforces profile-before-session ordering for signup.
+
 ## 2026-08-04 — Dev map, session, reporting, and visual stabilization
 
 - Fixed large map queries by batching report metadata lookups and safely handling non-JSON upstream errors instead of returning an internal server error.
