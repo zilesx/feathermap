@@ -6,3 +6,11 @@
 @container(max-width:700px){.feature-grid{grid-template-columns:1fr}.feature-grid article{grid-template-columns:1fr 1fr}.feature-grid article>div{grid-column:1/-1}.feature-grid article>.primary{grid-column:1/-1}.override-form{grid-template-columns:1fr 1fr}.override-reason{grid-column:1/-1}}
 @container(max-width:430px){.feature-grid article,.override-form{grid-template-columns:1fr}.feature-grid article>div,.feature-grid article>.primary,.override-reason{grid-column:auto}}
 @container(max-width:360px){.feature-fields{grid-template-columns:1fr}.feature-toggles{align-items:flex-start;flex-direction:column}}
+
+/* Keep every feature action inside its own responsive card. */
+.feature-grid{grid-template-columns:repeat(auto-fit,minmax(min(480px,100%),1fr))}
+.feature-grid article{display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden}
+.feature-fields{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:auto}
+.feature-fields>.primary{grid-column:1/-1;justify-self:stretch;max-width:100%}
+@container(max-width:700px){.feature-grid article{display:flex}.feature-grid article>div,.feature-grid article>.primary{grid-column:auto}}
+@container(max-width:360px){.feature-fields{grid-template-columns:1fr}.feature-fields>.primary{grid-column:auto}}

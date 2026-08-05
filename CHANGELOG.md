@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev map, session, reporting, and visual stabilization
+
+- Fixed large map queries by batching report metadata lookups and safely handling non-JSON upstream errors instead of returning an internal server error.
+- Delayed the first map and density requests until signed-in preferences resolve, eliminating the incorrect default-range request and duplicate reload.
+- Added centralized expired-session recovery for the map and Admin Portal, including a clear sign-in prompt and return to the requested admin page.
+- Increased local marker visibility, preserved category colors, and maintained a readable minimum size through zoom transitions.
+- Restored administrator-configured count ranges to the report form and removed the detached count overlay from the reporting workflow.
+- Moved private harvest access into the account action bar as a normal Harvest journal action.
+- Rebalanced light-mode surfaces, headers, close controls, action bars, borders, and shadows for lower contrast and consistent readability.
+- Corrected Platform feature-card sizing so responsive Save controls remain inside their cards at wide and narrow viewport sizes.
+
 ## 2026-08-04 — Dev configurable global bird-count ranges
 
 - Added administrator-managed global report-count ranges with editable labels, minimums, optional maximums, descriptions, ordering, visibility, and archival status.

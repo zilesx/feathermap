@@ -66,9 +66,19 @@ async function supabase(path, { method = "GET", token = SERVICE_KEY, data, prefe
     body: data === undefined ? undefined : JSON.stringify(data),
   });
   const text = await response.text();
-  const result = text ? JSON.parse(text) : null;
-  if (!response.ok) throw Object.assign(new Error(result?.message || result?.msg || "Database request failed"), { status: response.status });
+  const result = parseResponseBody(text);
+  if (!response.ok) throw Object.assign(new Error(result?.message || result?.msg || `Database request failed (${response.status})`), { status: response.status });
   return result;
+}
+
+async function supabaseByIds(table, ids, select, batchSize = 100) {
+  if (!ids.length) return [];
+  const batches = [];
+  for (let index = 0; index < ids.length; index += batchSize) batches.push(ids.slice(index, index + batchSize));
+  const rows = await Promise.all(batches.map(batch =>
+    supabase(`/rest/v1/${table}?id=in.(${batch.join(",")})&select=${select}`)
+  ));
+  return rows.flat();
 }
 
 async function currentUser(req) {
@@ -340,7 +350,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/sightings") {
       rateLimit(req, 120);
       const mapConfig=await configValue("map",{default_days:7,max_days:90,max_results:250});
-      const range=requestedRange(url,Number(mapConfig.default_days||30));const rows=await supabase("/rest/v1/rpc/nearby_sightings",{method:"POST",token:ANON_KEY,data:{p_limit:Math.min(Number(url.searchParams.get("limit"))||500,1000),p_since:range.start.toISOString()}}),ids=rows.map(row=>row.id),metadata=ids.length?await supabase(`/rest/v1/sightings?id=in.(${ids.join(",")})&select=id,subspecies_slug,count_range_slug,flock_label_snapshot,flock_min_snapshot,flock_max_snapshot,estimated_birds_snapshot`):[],metadataById=new Map(metadata.map(item=>[item.id,item]));return json(res,200,{sightings:rows.filter(row=>new Date(row.occurred_at)<=range.end).map(row=>{const item=metadataById.get(row.id);return{...row,subspecies:item?.subspecies_slug||null,count_range:item?.count_range_slug||null,flock_size:item?.flock_label_snapshot||row.flock_size,flock_min:item?.flock_min_snapshot||null,flock_max:item?.flock_max_snapshot||null,estimated_birds:item?.estimated_birds_snapshot||null}}),range:{start:range.start,end:range.end}},origin);
+      const range=requestedRange(url,Number(mapConfig.default_days||30));const rows=await supabase("/rest/v1/rpc/nearby_sightings",{method:"POST",token:ANON_KEY,data:{p_limit:Math.min(Number(url.searchParams.get("limit"))||500,1000),p_since:range.start.toISOString()}}),ids=rows.map(row=>row.id),metadata=await supabaseByIds("sightings",ids,"id,subspecies_slug,count_range_slug,flock_label_snapshot,flock_min_snapshot,flock_max_snapshot,estimated_birds_snapshot"),metadataById=new Map(metadata.map(item=>[item.id,item]));return json(res,200,{sightings:rows.filter(row=>new Date(row.occurred_at)<=range.end).map(row=>{const item=metadataById.get(row.id);return{...row,subspecies:item?.subspecies_slug||null,count_range:item?.count_range_slug||null,flock_size:item?.flock_label_snapshot||row.flock_size,flock_min:item?.flock_min_snapshot||null,flock_max:item?.flock_max_snapshot||null,estimated_birds:item?.estimated_birds_snapshot||null}}),range:{start:range.start,end:range.end}},origin);
     }
 
     if(req.method==="GET"&&url.pathname==="/api/map/heatmap"){
