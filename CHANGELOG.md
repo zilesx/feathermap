@@ -2,6 +2,7 @@
 
 ## 2026-08-04 — Dev resilient reporting, errors, and map interaction
 
+- Fixed the canvas activity layer initialization order that caused the page to render briefly and then go black.
 - Replaced raw browser `Failed to fetch` messages with operation-specific guidance across the map, accounts, reporting, feedback, and Admin Portal.
 - Kept temporary session-refresh network failures from signing users out and added a dismissible connection status.
 - Split report creation from photo upload so a failed photo never causes a duplicate sighting submission.
