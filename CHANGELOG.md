@@ -1,5 +1,15 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev resilient reporting, errors, and map interaction
+
+- Replaced raw browser `Failed to fetch` messages with operation-specific guidance across the map, accounts, reporting, feedback, and Admin Portal.
+- Kept temporary session-refresh network failures from signing users out and added a dismissible connection status.
+- Split report creation from photo upload so a failed photo never causes a duplicate sighting submission.
+- Added a persistent, retryable photo-upload notice that targets the already-created report.
+- Corrected report-count choices to render numeric labels instead of internal slugs, including thousands separators.
+- Replaced hundreds of zoomed-out DOM density markers with a single high-DPI canvas activity layer.
+- Stabilized wheel and pointer movement states, reduced per-wheel zoom increments, and prevented decorative overlays from intercepting map gestures.
+
 ## 2026-08-04 — Dev reporting, filters, map interaction, and banded birds
 
 - Fixed report submission preflight failures by allowing FeatherMap platform and version headers through API CORS.

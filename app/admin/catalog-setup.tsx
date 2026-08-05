@@ -2,6 +2,7 @@
 
 import {FormEvent,useEffect,useState} from "react";
 import CountRangeSetup from "./count-range-setup";
+import {networkError} from "../request-errors";
 
 const API=process.env.NEXT_PUBLIC_API_URL||"https://api.feather-map.com";
 const slugify=(value:string)=>value.toLowerCase().trim().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
@@ -24,7 +25,7 @@ export default function CatalogSetup({visible,token,role}:{visible:boolean;token
   const[status,setStatus]=useState("");
 
   async function request(path:string,options:RequestInit={}){
-    const response=await fetch(`${API}${path}`,{...options,headers:{Authorization:`Bearer ${token}`,...options.headers}});
+    let response:Response;try{response=await fetch(`${API}${path}`,{...options,headers:{Authorization:`Bearer ${token}`,...options.headers}})}catch(cause){throw networkError("admin",cause)}
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||"Request failed");
     return data;

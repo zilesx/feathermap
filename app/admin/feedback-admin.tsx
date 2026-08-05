@@ -3,19 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import PrivateFeedbackGallery from "../private-feedback-gallery";
 import "./feedback-admin.css";
 import "./feedback-admin-refinements.css";
+import {networkError} from "../request-errors";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://api.feather-map.com";
 const titleCase = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 async function call(path: string, token: string, options: RequestInit = {}) {
-  const response = await fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  let response:Response;
+  try{response = await fetch(`${API}${path}`, {...options,headers: {Authorization: `Bearer ${token}`,"Content-Type": "application/json",...options.headers}})}
+  catch(cause){throw networkError("admin",cause)}
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Request failed");
   return data;
