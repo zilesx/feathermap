@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-08-04 — Dev map continuity, banded activity, and session policy
+
+- Kept privacy-safe aggregate activity visible through regional zooms so reports no longer disappear at the former zoom-7 handoff.
+- Reduced broad-zoom dot size, removed the thick white “candy” border, scaled dots by aggregate bird volume, and added subtle deterministic separation.
+- Linked banded-bird reports to normal protected sightings so they participate in map, timeframe, filtering, detail, commenting, saving, moderation, and owner-deletion workflows.
+- Added star markers for linked banded-bird activity at regional and local zooms.
+- Added idempotent band-report submission, server-side species/subspecies validation, duplicate-band moderation candidates, double-submit protection, and success-only form reset.
+- Added `migrate_banded_activity_sessions.sql` for band-report idempotency indexes and the standard 72-hour user-session policy.
+- Added silent short-lived access-token refresh while retaining a visible countdown for actual application-session expiry.
+- Constrained catalog Edit and Edit reference actions and corrected the oversized self-service account deletion control.
+
 ## 2026-08-04 — Dev resilient reporting, errors, and map interaction
 
 - Fixed the canvas activity layer initialization order that caused the page to render briefly and then go black.
