@@ -255,6 +255,48 @@
 }
 :root[data-theme="light"] .filter.active { background: var(--fm-text) !important; color: #fff !important; }
 
+/* Theme-aware map filtering chrome. Category colors remain as accents while
+   every neutral surface follows the selected appearance. */
+:root[data-theme] .filter-composite {
+  background: var(--fm-control) !important;
+  border: 1px solid var(--fm-border) !important;
+  box-shadow: 0 .35rem 1rem var(--fm-shadow) !important;
+}
+:root[data-theme] .filter-composite :is(.filter, .filter-refine) {
+  background: transparent !important;
+  color: var(--fm-text) !important;
+  border-color: var(--fm-border) !important;
+  box-shadow: none !important;
+}
+:root[data-theme] .filter-composite.active {
+  background: var(--fm-text) !important;
+}
+:root[data-theme] .filter-composite.active :is(.filter, .filter-refine) {
+  color: var(--fm-surface-1) !important;
+}
+:root[data-theme] .filter-refine {
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 2.4rem;
+  min-inline-size: 2.4rem !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+:root[data-theme] .filter-refine > span {
+  display: block;
+  line-height: 1;
+  transition: transform .15s ease;
+}
+:root[data-theme] .filter-refine[aria-expanded="true"] { transform: none; }
+:root[data-theme] .filter-refine[aria-expanded="true"] > span { transform: rotate(180deg); }
+:root[data-theme] :is(.time-filter, .area, .timeframe-control .custom-range) {
+  background: var(--fm-control) !important;
+  color: var(--fm-text) !important;
+  border-color: var(--fm-border) !important;
+  box-shadow: 0 .35rem 1rem var(--fm-shadow) !important;
+}
+:root[data-theme] .area :is(small, b) { color: var(--fm-text-muted) !important; }
+
 /* Account actions live visually inside their account workspace. */
 .account-card { padding-bottom: 2rem !important; }
 .account-actions {

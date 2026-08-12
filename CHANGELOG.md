@@ -1,5 +1,31 @@
 # FeatherMap changelog
 
+## 2026-08-11 — Theme-aware map controls and basemap
+
+- Kept category refinement indicators visible and stable when categories are selected, and prevented category controls from dismissing their own refinement panel.
+- Normalized category pills, refinement controls, timeframe selection, custom dates, and the live-map location indicator across light, dark, and system appearances.
+- Added a restrained dark basemap treatment while preserving the existing OpenStreetMap raster in light mode and all administrator-configured activity colors.
+- Applied basemap appearance changes through raster paint properties only, without rebuilding the map, replacing its style, moving its camera, or interrupting wheel and pinch gestures.
+- Added regression coverage for theme switching, stable camera ownership, and category refinement behavior.
+
+## 2026-08-11 — Stable map navigation and unified reporting
+
+- Replaced the competing handwritten map gesture and marker layers with one MapLibre camera and GeoJSON activity source, eliminating application-driven recentering during wheel and pinch gestures.
+- Preserved protected category-colored activity dots, scalable volume, banded-bird stars, location selection, flyway context, and explicit map controls on the new map foundation.
+- Consolidated Seen, Harvest, and Banded bird into the Report birds entry flow while retaining private harvest records, duplicate-safe band encounters, protected locations, notes, and sanitized photo uploads.
+- Removed the separate banded-bird account action and reset successful encounters through the unified reporting workflow.
+- Attached species and subspecies refinement directly to category pills with an expansion indicator, All selection, partial-state handling, collapsible species children, and a responsive mobile sheet.
+- Kept the timeframe control independent so bird and date filters can be used together.
+- Replaced legacy map implementation assertions with stable-camera, unified-reporting, and composable-filter regression coverage.
+
+## 2026-08-11 — Consistent filtered map activity and empty states
+
+- Unified map rendering and empty-state decisions around the same filtered, viewport-aware activity model.
+- Limited broad zooms to the aggregate canvas and regional/local zooms to individual protected reports so competing marker systems no longer overlap.
+- Applied saved bird-category visibility preferences to aggregate heatmap cells, including mixed-category cells.
+- Cleared stale aggregate results as timeframe, taxonomy, or zoom mode changes and ignored superseded heatmap responses.
+- Replaced the contradictory “No fresh sightings” message with distinct filter-empty and viewport-empty guidance.
+
 ## 2026-08-11 — Unified themes, stable map chrome, and account layout
 
 - Added a final semantic theme layer covering every neutral surface, form control, action, state message, overlay, and administrative workspace in light, dark, and system appearances.
