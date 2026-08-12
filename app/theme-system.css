@@ -1,0 +1,296 @@
+/* FeatherMap semantic theme system.
+   This file is intentionally last in the cascade: component files describe
+   layout while these rules own neutral color, state, and control geometry. */
+:root,
+:root[data-theme="dark"] {
+  --fm-canvas: #08100b;
+  --fm-surface-1: #101914;
+  --fm-surface-2: #16231b;
+  --fm-surface-3: #1d2c22;
+  --fm-control: #1b2a20;
+  --fm-control-hover: #25372a;
+  --fm-text: #f4f7f2;
+  --fm-text-soft: #c3cec5;
+  --fm-text-muted: #98a79c;
+  --fm-border: #3f5245;
+  --fm-border-strong: #607466;
+  --fm-accent: #c8f253;
+  --fm-accent-hover: #d7fa77;
+  --fm-accent-text: #142016;
+  --fm-focus: #d9ff6a;
+  --fm-overlay: rgb(3 8 5 / 82%);
+  --fm-shadow: rgb(0 0 0 / 55%);
+  --fm-danger: #ff8f7d;
+  --fm-danger-bg: #391b17;
+  --fm-warning: #ffd06a;
+  --fm-warning-bg: #332817;
+  --fm-success: #c8f253;
+  --fm-success-bg: #1b2c18;
+  --fm-info: #8bd7ef;
+  --fm-info-bg: #142932;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --fm-canvas: #e8eee7;
+  --fm-surface-1: #f8faf6;
+  --fm-surface-2: #eef3ec;
+  --fm-surface-3: #e4ebe2;
+  --fm-control: #f7faf5;
+  --fm-control-hover: #e1e9de;
+  --fm-text: #142019;
+  --fm-text-soft: #33463a;
+  --fm-text-muted: #607066;
+  --fm-border: #b8c6b9;
+  --fm-border-strong: #879b8a;
+  --fm-accent: #5a8500;
+  --fm-accent-hover: #486d00;
+  --fm-accent-text: #fff;
+  --fm-focus: #355f00;
+  --fm-overlay: rgb(20 32 25 / 54%);
+  --fm-shadow: rgb(31 49 37 / 22%);
+  --fm-danger: #9b2f22;
+  --fm-danger-bg: #fff0ec;
+  --fm-warning: #785600;
+  --fm-warning-bg: #fff7db;
+  --fm-success: #416d00;
+  --fm-success-bg: #edf7df;
+  --fm-info: #075c78;
+  --fm-info-bg: #e6f5fa;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    --fm-canvas: #e8eee7;
+    --fm-surface-1: #f8faf6;
+    --fm-surface-2: #eef3ec;
+    --fm-surface-3: #e4ebe2;
+    --fm-control: #f7faf5;
+    --fm-control-hover: #e1e9de;
+    --fm-text: #142019;
+    --fm-text-soft: #33463a;
+    --fm-text-muted: #607066;
+    --fm-border: #b8c6b9;
+    --fm-border-strong: #879b8a;
+    --fm-accent: #5a8500;
+    --fm-accent-hover: #486d00;
+    --fm-accent-text: #fff;
+    --fm-focus: #355f00;
+    --fm-overlay: rgb(20 32 25 / 54%);
+    --fm-shadow: rgb(31 49 37 / 22%);
+    --fm-danger: #9b2f22;
+    --fm-danger-bg: #fff0ec;
+    --fm-warning: #785600;
+    --fm-warning-bg: #fff7db;
+    --fm-success: #416d00;
+    --fm-success-bg: #edf7df;
+    --fm-info: #075c78;
+    --fm-info-bg: #e6f5fa;
+    color-scheme: light;
+  }
+}
+
+:root[data-theme] {
+  --surface-page: var(--fm-canvas);
+  --surface-panel: var(--fm-surface-1);
+  --surface-raised: var(--fm-surface-2);
+  --surface-input: var(--fm-control);
+  --surface-hover: var(--fm-control-hover);
+  --surface-header: var(--fm-surface-1);
+  --text-primary: var(--fm-text);
+  --text-secondary: var(--fm-text-soft);
+  --text-muted: var(--fm-text-muted);
+  --border-strong: var(--fm-border);
+  --shadow-color: var(--fm-shadow);
+  --green: var(--fm-accent);
+  --ink: var(--fm-text);
+  --muted: var(--fm-text-muted);
+  --panel: var(--fm-surface-1);
+  --line: var(--fm-border);
+}
+
+:root[data-theme] body,
+:root[data-theme] .admin-page {
+  background: var(--fm-canvas) !important;
+  color: var(--fm-text) !important;
+}
+
+/* Structural surfaces */
+:root[data-theme] :is(
+  .topbar, .bottom-nav, .content-panel, .panel-head, .account-card,
+  .modal, .modal-head, .report-card, .empty-map, .taxonomy-filter,
+  .species-selection-summary, .report-count-floating, .report-context-panel,
+  .detail-context-tools, .photo-retry-notice, .network-status-notice,
+  .admin-sidebar, .admin-workspace, .admin-card, .admin-detail,
+  .settings-card, .settings-section, .settings-heading, .settings-actions,
+  .platform-controls, .platform-section, .feature-card,
+  .moderation-detail, .content-snapshot, .case-report, .case-history,
+  .user-context, .feedback-admin-list article, .feedback-original,
+  .feedback-thread article, .catalog-section, .catalog-grid article,
+  .preferences-form, .preference-block, .profile-preferences,
+  .session-list, .notification-list a, .comments, .comment-list article,
+  .comment-compose, .detail-hero, .detail-grid, .report-note,
+  .harvest-journal-entry, .harvest-summary-grid > div, .privacy-copy,
+  .legal-notice, .layer-future
+) {
+  background-color: var(--fm-surface-1) !important;
+  color: var(--fm-text) !important;
+  border-color: var(--fm-border) !important;
+}
+
+:root[data-theme] :is(
+  .stats, .stats div, .preference-row, .detail-grid div,
+  .comments-head, .role-definition-grid article, .membership-card,
+  .feature-grid article, .access-form, .audit-list article,
+  .moderation-case-list article, .user-list article
+) {
+  background-color: var(--fm-surface-2) !important;
+  color: var(--fm-text) !important;
+  border-color: var(--fm-border) !important;
+}
+
+:root[data-theme] :is(h1,h2,h3,h4,h5,h6,p,label,legend,dt,dd,th,td,strong,b,time,summary) {
+  border-color: var(--fm-border);
+}
+:root[data-theme] :is(.eyebrow, small, .fine, .panel-empty, .no-comments, .reporter-name) {
+  color: var(--fm-text-muted) !important;
+}
+:root[data-theme] a { color: color-mix(in srgb, var(--fm-accent) 82%, var(--fm-text)); }
+
+/* Every native and custom form control */
+:root[data-theme] :is(input, select, textarea) {
+  min-width: 0;
+  background: var(--fm-control) !important;
+  color: var(--fm-text) !important;
+  border: 1px solid var(--fm-border) !important;
+  accent-color: var(--fm-accent);
+}
+:root[data-theme] :is(input, select, textarea)::placeholder { color: var(--fm-text-muted); opacity: 1; }
+:root[data-theme] :is(input, select, textarea):disabled { opacity: .58; cursor: not-allowed; }
+:root[data-theme] input[type="checkbox"],
+:root[data-theme] input[type="radio"] { inline-size: 1.1rem; block-size: 1.1rem; }
+:root[data-theme] input[type="color"] { padding: .2rem !important; }
+:root[data-theme] input[type="file"]::file-selector-button {
+  margin-inline-end: .75rem; padding: .55rem .75rem; border: 1px solid var(--fm-border);
+  border-radius: .4rem; background: var(--fm-surface-2); color: var(--fm-text); font-weight: 700;
+}
+
+/* Unified action language */
+:root[data-theme] button,
+:root[data-theme] [role="button"],
+:root[data-theme] .secondary-action,
+:root[data-theme] .account-actions a {
+  border-color: var(--fm-border);
+}
+:root[data-theme] :is(
+  .panel-head button, .card-detail-btn, .save-btn, .save-detail,
+  .auth-switch, .secondary-action, .location-list button,
+  .taxonomy-close, .map-controls button, .feedback-launcher,
+  .account-actions button, .account-actions a,
+  .admin-page button:not(.primary):not(.danger):not(.danger-action),
+  .catalog-grid button, .moderation-case-list button
+) {
+  background: var(--fm-control) !important;
+  color: var(--fm-text) !important;
+  border: 1px solid var(--fm-border) !important;
+  box-shadow: none;
+}
+:root[data-theme] :is(.share, .primary, .report-button, .confirm-btn, .access-save) {
+  background: var(--fm-accent) !important;
+  color: var(--fm-accent-text) !important;
+  border-color: var(--fm-accent) !important;
+}
+:root[data-theme] :is(.danger-action, .delete-report, .delete-account-launcher) {
+  background: var(--fm-danger-bg) !important;
+  color: var(--fm-danger) !important;
+  border: 1px solid color-mix(in srgb, var(--fm-danger) 60%, var(--fm-border)) !important;
+}
+:root[data-theme] :is(button, [role="button"], a):focus-visible,
+:root[data-theme] :is(input, select, textarea):focus-visible {
+  outline: 3px solid var(--fm-focus) !important;
+  outline-offset: 2px !important;
+}
+:root[data-theme] button:disabled { opacity: .52; cursor: not-allowed; }
+@media (hover:hover) {
+  :root[data-theme] :is(button,[role="button"],.account-actions a):not(:disabled):hover {
+    border-color: var(--fm-border-strong) !important;
+    filter: brightness(1.06);
+  }
+}
+
+/* Close controls share one geometry and never depend on font baselines. */
+:root[data-theme] :is(.modal-head > button, .panel-close, .close-card, .taxonomy-close, .location-delete) {
+  display: grid !important;
+  place-items: center !important;
+  inline-size: 2.25rem !important;
+  block-size: 2.25rem !important;
+  min-inline-size: 2.25rem !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: var(--fm-control) !important;
+  color: var(--fm-text) !important;
+  border: 1px solid var(--fm-border) !important;
+  font: 700 1.35rem/1 ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Overlays and stacking: map data must never cross into application chrome. */
+:root[data-theme] .modal-wrap { background: var(--fm-overlay) !important; z-index: 200 !important; }
+.map { isolation: isolate; }
+.map-canvas { z-index: 1; overflow: hidden; contain: layout paint; transition: none !important; }
+.activity-canvas { z-index: 4; }
+.banded-map-star { z-index: 6 !important; }
+.topbar { z-index: 30 !important; }
+.filters, .timeframe-control, .taxonomy-filter, .map-controls { z-index: 25 !important; }
+.report-card, .content-panel, .panel-backdrop { z-index: 40 !important; }
+.bottom-nav { z-index: 50 !important; }
+.app-shell:has(.report-card) .banded-map-star,
+.app-shell:has(.detail-modal) .banded-map-star { visibility: hidden; }
+
+/* Light mode map chrome follows the interface while map data retains category colors. */
+:root[data-theme="light"] :is(.topbar, .bottom-nav) { background: rgb(248 250 246 / 96%) !important; }
+:root[data-theme="light"] :is(.filter:not(.active), .time-filter, .map-controls button, .map-controls span, .area, .avatar) {
+  background: rgb(248 250 246 / 95%) !important; color: var(--fm-text) !important;
+  border-color: var(--fm-border) !important; box-shadow: 0 .35rem 1rem var(--fm-shadow) !important;
+}
+:root[data-theme="light"] .filter.active { background: var(--fm-text) !important; color: #fff !important; }
+
+/* Account actions live visually inside their account workspace. */
+.account-card { padding-bottom: 2rem !important; }
+.account-actions {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .55rem;
+  max-width: 42rem; margin: 2rem auto 0; padding: .75rem;
+  background: var(--fm-surface-2); border: 1px solid var(--fm-border); border-radius: .8rem;
+}
+.account-actions :is(button,a) {
+  display: grid; place-items: center; min-height: 2.65rem; padding: .55rem .75rem;
+  border-radius: .5rem; text-align: center; text-decoration: none; font-size: .72rem; font-weight: 750;
+}
+.account-actions .signout { grid-column: span 2; }
+.account-quick-actions { display: none !important; }
+
+/* Admin workspace normalization */
+:root[data-theme] .admin-sidebar { box-shadow: inset -1px 0 var(--fm-border); }
+:root[data-theme] .admin-sidebar a { color: var(--fm-text-soft) !important; }
+:root[data-theme] .admin-sidebar a.active { background: var(--fm-surface-3) !important; color: var(--fm-accent) !important; }
+:root[data-theme] .admin-table,
+:root[data-theme] .audit-card { width: 100%; max-width: 100%; overflow: auto; }
+:root[data-theme] .admin-table table { width: 100%; table-layout: fixed; }
+:root[data-theme] .admin-table :is(th,td) { overflow-wrap: anywhere; }
+
+/* State messaging */
+:root[data-theme] :is(.form-status.success, .success-notice) { background: var(--fm-success-bg); color: var(--fm-success); border-color: var(--fm-success); }
+:root[data-theme] :is(.form-status.error, .error-notice) { background: var(--fm-danger-bg); color: var(--fm-danger); border-color: var(--fm-danger); }
+:root[data-theme] :is(.warning-notice, .session-expiry-modal) { background: var(--fm-warning-bg); color: var(--fm-text); border-color: var(--fm-warning); }
+
+@media (max-width: 760px) {
+  .account-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .admin-table table { table-layout: auto; min-width: 44rem; }
+}
+@media (max-width: 430px) {
+  .account-actions { grid-template-columns: 1fr; }
+  .account-actions .signout { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

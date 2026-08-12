@@ -1,5 +1,16 @@
 # FeatherMap changelog
 
+## 2026-08-11 — Unified themes, stable map chrome, and account layout
+
+- Added a final semantic theme layer covering every neutral surface, form control, action, state message, overlay, and administrative workspace in light, dark, and system appearances.
+- Standardized primary, secondary, destructive, selected, disabled, hover, and keyboard-focus states without overriding administrator-managed bird-category colors.
+- Normalized modal and panel close controls to one centered, accessible geometry across both themes.
+- Isolated map rendering from application chrome, kept banded-bird stars below cards and headers, and suppressed the selected marker while an activity overlay is open.
+- Removed map-canvas transition drift so manual wheel, touch, and pointer navigation remains authoritative during data refreshes.
+- Moved account navigation into the account workspace and added responsive action layouts instead of a floating toolbar.
+- Normalized Admin Portal navigation, cards, forms, tables, feature controls, feedback, moderation, and audit surfaces.
+- Added reduced-motion handling, responsive table containment, and theme-contract regression coverage.
+
 ## 2026-08-04 — Dev saved profile preferences and realistic date coverage
 
 - Removed the obsolete estimated-activity map legend.
