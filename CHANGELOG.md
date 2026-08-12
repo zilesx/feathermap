@@ -1,5 +1,14 @@
 # FeatherMap changelog
 
+## 2026-08-12 — Multi-bird reports and focused account navigation
+
+- Consolidated band encounters into the standard protected bird report instead of presenting a separate report type or account action.
+- Added multiple bird entries to one field report, with species, optional subspecies, and count captured independently for each entry.
+- Made band details optional per bird entry so a mixed flock can include one or more banded birds without marking every bird as banded.
+- Added a backward-compatible sighting-entry schema and API normalization so existing single-bird reports and older clients continue to work.
+- Kept the prominent protected star whenever any entry is banded, and changed duplicate-band checks to flag the matching entry for staff review without rejecting the full report.
+- Reorganized the account workspace into four aligned personal actions, a dedicated full-width Admin Portal action for staff, and a compact Sign out control.
+
 ## 2026-08-11 — Theme-aware map controls and basemap
 
 - Kept category refinement indicators visible and stable when categories are selected, and prevented category controls from dismissing their own refinement panel.
