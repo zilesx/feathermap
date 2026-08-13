@@ -1,5 +1,13 @@
 # FeatherMap changelog
 
+## 2026-08-12 — Full-range national activity aggregation
+
+- Replaced the capped national heatmap input with a database-side aggregation over every eligible report in the selected range.
+- Kept exact report coordinates inside a security-definer function and generalized locations deterministically before grouping them into map cells.
+- Added explicit range-end handling so custom historical windows no longer include newer reports outside the requested period.
+- Preserved the 1,000-report limit for local clickable markers while removing that limit from national and regional aggregate views.
+- Added a partial activity-time index plus regression coverage for full-range aggregation, moderation-state filtering, and privacy-safe category breakdowns.
+
 ## 2026-08-12 — Multi-bird reports and focused account navigation
 
 - Consolidated band encounters into the standard protected bird report instead of presenting a separate report type or account action.
