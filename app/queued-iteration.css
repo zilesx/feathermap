@@ -166,6 +166,11 @@
 }
 
 .report-photo-indicator{display:inline-flex;align-items:center;gap:.35rem;margin-top:.35rem;padding:.28rem .55rem;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface-raised);color:var(--text-primary);font-size:.68rem;font-weight:800}
+.report-location-card{display:grid;gap:.8rem;margin:1rem 0;padding:1rem;border:1px solid var(--border-strong);border-radius:.8rem;background:var(--surface-raised)}
+.report-location-card-copy{display:flex;gap:.75rem;align-items:flex-start}.report-location-card-copy>span{color:var(--accent);font-size:1.1rem}.report-location-card-copy p{margin:.25rem 0}.report-location-card-copy small{color:var(--text-muted)}
+.report-location-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}.report-location-card-actions button{min-height:2.75rem}.report-location-card-actions button.active{border-color:var(--accent);background:var(--surface-selected);color:var(--text-primary)}
+.report-time-panel{width:min(260px,calc(100vw - 2rem))}
+@media(max-width:640px){.report-location-card-actions{grid-template-columns:1fr}}
 
 /* Stable map, unified reporting, and composable taxonomy controls */
 .filter-composite {

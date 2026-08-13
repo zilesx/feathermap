@@ -1,5 +1,12 @@
 # FeatherMap changelog
 
+## 2026-08-12 — Integrated report location and completion
+
+- Moved current, map, and saved-location choices into the protected-location card in the report form.
+- Preserves the full in-progress report while users temporarily choose a protected point on the map.
+- Opens the newly submitted report directly in its full details modal after the activity list refreshes.
+- Still opens report details when an attachment upload needs retrying, without creating a duplicate report.
+
 ## 2026-08-12 — Reporting fallbacks and priority activity
 
 - Automatically switches denied or unavailable device-location reports into protected map selection so reporting remains possible without location permission.
