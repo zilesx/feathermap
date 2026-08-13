@@ -165,7 +165,12 @@
   .harvest-summary-grid { grid-template-columns: 1fr; }
 }
 
-.report-photo-indicator{display:inline-flex;align-items:center;gap:.35rem;margin-top:.35rem;padding:.28rem .55rem;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface-raised);color:var(--text-primary);font-size:.68rem;font-weight:800}
+.report-indicators,.detail-indicators{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;margin-top:.45rem}
+.report-indicator,.detail-indicator{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;min-height:1.75rem;padding:.3rem .6rem;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface-raised);color:var(--text-primary);font-size:.68rem;font-weight:800;line-height:1}
+.report-indicator.banded,.detail-indicator.banded{border-color:#f5a623;color:#f5a623;background:color-mix(in srgb,#f5a623 10%,var(--surface-raised))}
+.detail-indicators{margin:1rem 0}
+.banded-detail{margin:1rem 0;padding:1rem;border:1px solid color-mix(in srgb,#f5a623 55%,var(--border-strong));border-radius:.75rem;background:color-mix(in srgb,#f5a623 7%,var(--surface-raised))}
+.banded-detail h3{margin:.2rem 0 .75rem}.banded-detail-list{display:grid;gap:.5rem}.banded-detail-list article{display:grid;gap:.2rem;padding:.7rem;border:1px solid var(--border-subtle);border-radius:.55rem;background:var(--surface-panel)}.banded-detail-list span,.banded-detail-list small{color:var(--text-muted);text-transform:capitalize}
 .report-location-card{display:grid;gap:.8rem;margin:1rem 0;padding:1rem;border:1px solid var(--border-strong);border-radius:.8rem;background:var(--surface-raised)}
 .report-location-card-copy{display:flex;gap:.75rem;align-items:flex-start}.report-location-card-copy>span{color:var(--accent);font-size:1.1rem}.report-location-card-copy p{margin:.25rem 0}.report-location-card-copy small{color:var(--text-muted)}
 .report-location-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}.report-location-card-actions button{min-height:2.75rem}.report-location-card-actions button.active{border-color:var(--accent);background:var(--surface-selected);color:var(--text-primary)}
@@ -182,6 +187,18 @@
   box-shadow: var(--shadow);
   overflow: hidden;
 }
+.filter-composite{display:inline-flex;align-items:stretch;overflow:hidden;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface-raised);box-shadow:var(--shadow-soft)}
+.filter-composite .filter,.filter-composite .filter-refine{height:2.55rem;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.filter-composite .filter{padding:.65rem .8rem .65rem 1rem}
+.filter-refine{width:2.45rem;min-width:2.45rem;padding:0!important;border-left:1px solid var(--border-subtle)!important;display:grid!important;place-items:center!important}
+.filter-refine svg{width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease}
+.filter-refine[aria-expanded="true"] svg{transform:rotate(180deg)}
+.filter-composite.active{border-color:var(--category-color,var(--accent));background:var(--text-primary)}
+.filter-composite.active :is(.filter,.filter-refine){color:var(--surface-panel)!important}
+.filter-composite.active .filter-refine{border-left-color:color-mix(in srgb,var(--surface-panel) 28%,transparent)!important}
+
+:is(.modal-head>button,.panel-close,.close-card,.taxonomy-filter-head>button){display:grid!important;place-items:center!important;padding:0!important;line-height:0!important;text-indent:0!important;font-family:Arial,sans-serif!important}
+:is(.modal-head>button,.panel-close,.close-card,.taxonomy-filter-head>button)::first-letter{line-height:1}
 
 .filter-composite .filter {
   min-width: 0;
@@ -304,3 +321,15 @@
 .harvest-count-stepper { display:grid;grid-template-columns:2.75rem minmax(4rem,1fr) 2.75rem;align-items:stretch;min-width:0 }
 .harvest-count-stepper button { min-width:2.75rem;min-height:2.75rem;padding:0;font-size:1.2rem;font-weight:800 }
 .harvest-count-stepper input { width:100%;min-width:0;text-align:center;border-radius:0 }
+
+/* Cohesive category controls and consistently centered modal dismissal affordances. */
+.filters .filter-composite{display:inline-flex;align-items:stretch;overflow:hidden;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface-raised);box-shadow:var(--shadow-soft)}
+.filters .filter-composite .filter,.filters .filter-composite .filter-refine{height:2.55rem;margin:0;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--text-primary)}
+.filters .filter-composite .filter{padding:.65rem .8rem .65rem 1rem}
+.filters .filter-composite .filter-refine{width:2.45rem;min-width:2.45rem;padding:0!important;border-left:1px solid var(--border-subtle)!important;display:grid!important;place-items:center!important}
+.filters .filter-composite .filter-refine svg{width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease}
+.filters .filter-composite .filter-refine[aria-expanded="true"] svg{transform:rotate(180deg)}
+.filters .filter-composite.active{border-color:var(--category-color,var(--accent));background:var(--text-primary)}
+.filters .filter-composite.active :is(.filter,.filter-refine){color:var(--surface-panel)!important}
+.filters .filter-composite.active .filter-refine{border-left-color:color-mix(in srgb,var(--surface-panel) 28%,transparent)!important}
+:is(.modal-head>button,.panel-close,.close-card,.taxonomy-filter-head>button){display:grid!important;place-items:center!important;padding:0!important;line-height:1!important;font-family:Arial,sans-serif!important}

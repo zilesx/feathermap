@@ -1,4 +1,10 @@
 # FeatherMap changelog
+## 2026-08-12 — Report context and control polish
+
+- Added consistent photo and banded-bird indicators to compact and full report details.
+- Added full band metadata for every banded bird entry in a multi-bird report.
+- Rebuilt category/refinement controls as cohesive segmented pills with an animated SVG chevron.
+- Normalized modal close-button glyph alignment across activity, details, account, and refinement views.
 
 ## 2026-08-12 — Integrated report location and completion
 
