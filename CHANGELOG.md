@@ -542,3 +542,8 @@ This changelog is organized around explicit product build approvals and major de
 - Increased star contrast with category color, a substantial white outline, and a dark map-safe shadow.
 - Added a larger touch target plus visible hover and keyboard-focus feedback without turning the star into a circle.
 - Made the Edit Profile header fully opaque and isolated its scrolling content so fields no longer bleed above it.
+# 2026-08-12 — Inline bird reporting and mobile controls
+
+- Moved multi-bird entries and optional band details into the main report modal so the reporting workflow no longer depends on a floating side panel.
+- Added a mobile-safe category refinement trigger, horizontal filter scrolling, active-filter centering, and a bottom-sheet refinement layout with an explicit close control.
+- Replaced recovered-harvest count entry with an accessible numeric stepper that selects the current value for replacement and safely normalizes blank values to zero.
