@@ -1,12 +1,20 @@
 # FeatherMap changelog
 
-## 2026-08-12 — Full-range national activity aggregation
+## 2026-08-12 — Reporting fallbacks and priority activity
 
-- Replaced the capped national heatmap input with a database-side aggregation over every eligible report in the selected range.
-- Kept exact report coordinates inside a security-definer function and generalized locations deterministically before grouping them into map cells.
-- Added explicit range-end handling so custom historical windows no longer include newer reports outside the requested period.
-- Preserved the 1,000-report limit for local clickable markers while removing that limit from national and regional aggregate views.
-- Added a partial activity-time index plus regression coverage for full-range aggregation, moderation-state filtering, and privacy-safe category breakdowns.
+- Automatically switches denied or unavailable device-location reports into protected map selection so reporting remains possible without location permission.
+- Adds a compact, actionable photo indicator to report preview cards when an attachment exists.
+- Returns protected band encounters through an independent map endpoint so high-contrast stars remain visible at every zoom instead of being hidden by ordinary aggregation.
+- Keeps persistent banded markers subject to the selected timeframe and taxonomy filters while preserving randomized coordinates.
+
+## 2026-08-12 - Production two-year synthetic migration dataset
+
+- Added an idempotent, batch-tagged production dataset containing 150,000 synthetic reports across the preceding two years.
+- Weighted species, timing, flyway position, flock estimates, behavior, and observed weather from the enabled catalog configuration instead of using uniform random placement.
+- Kept generated locations within the continental portions of configured Pacific, Central, Mississippi, and Atlantic flyways.
+- Populated current count-range snapshots and multi-bird detail records so generated reports behave like reports created through the current application.
+- Added a small set of explicitly synthetic band encounters for validating prominent map stars and related workflows.
+- Added distribution summaries plus a dedicated rollback that removes only this synthetic batch.
 
 ## 2026-08-12 — Multi-bird reports and focused account navigation
 

@@ -165,6 +165,8 @@
   .harvest-summary-grid { grid-template-columns: 1fr; }
 }
 
+.report-photo-indicator{display:inline-flex;align-items:center;gap:.35rem;margin-top:.35rem;padding:.28rem .55rem;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface-raised);color:var(--text-primary);font-size:.68rem;font-weight:800}
+
 /* Stable map, unified reporting, and composable taxonomy controls */
 .filter-composite {
   display: inline-flex;

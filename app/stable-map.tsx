@@ -21,6 +21,7 @@ type Props = {
   camera: Camera;
   activity: Activity[];
   aggregate: Activity[];
+  priority: Activity[];
   aggregateMode: boolean;
   selectingLocation: boolean;
   selectedLocation?: { latitude: number; longitude: number } | null;
@@ -153,7 +154,8 @@ export default function StableMap(props: Props) {
           instance.on("mouseenter", layer, () => { instance.getCanvas().style.cursor = "pointer"; });
           instance.on("mouseleave", layer, () => { instance.getCanvas().style.cursor = ""; });
         }
-        const items = propsRef.current.aggregateMode ? propsRef.current.aggregate : propsRef.current.activity;
+        const base = propsRef.current.aggregateMode ? propsRef.current.aggregate : propsRef.current.activity;
+        const items = [...base.filter(item => !item.banded), ...propsRef.current.priority];
         instance.getSource("feathermap-activity").setData(collection(items));
       });
       themeListener = () => applyBasemapTheme(instance);
@@ -193,9 +195,10 @@ export default function StableMap(props: Props) {
   useEffect(() => {
     const instance = map.current;
     if (!instance || !loaded.current) return;
-    const items = props.aggregateMode ? props.aggregate : props.activity;
+    const base = props.aggregateMode ? props.aggregate : props.activity;
+    const items = [...base.filter(item => !item.banded), ...props.priority];
     instance.getSource("feathermap-activity")?.setData(collection(items));
-  }, [props.activity, props.aggregate, props.aggregateMode]);
+  }, [props.activity, props.aggregate, props.priority, props.aggregateMode]);
 
   useEffect(() => {
     const instance = map.current;
