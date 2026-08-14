@@ -1,12 +1,72 @@
 # FeatherMap changelog
 
-## 2026-08-12 — Full-range national activity aggregation
+## 2026-08-13 — Production synthetic-data refresh safety
 
-- Replaced the capped national heatmap input with a database-side aggregation over every eligible report in the selected range.
-- Kept exact report coordinates inside a security-definer function and generalized locations deterministically before grouping them into map cells.
-- Added explicit range-end handling so custom historical windows no longer include newer reports outside the requested period.
-- Preserved the 1,000-report limit for local clickable markers while removing that limit from national and regional aggregate views.
-- Added a partial activity-time index plus regression coverage for full-range aggregation, moderation-state filtering, and privacy-safe category breakdowns.
+- Corrected synthetic Supabase Auth accounts to use a finite ban timestamp that GoTrue can deserialize.
+- Initialized all required Auth token fields so administrative user enumeration remains operational.
+- Preserved the fixed synthetic batch identifier so production cleanup removes only generated reports.
+- Added deterministic client report identifiers to generated band encounters so the seed satisfies production idempotency constraints.
+## 2026-08-13 — Administrative scaling and reporting UX polish
+
+- Rebuilt the administrator user directory around bounded Auth paging and small profile batches so large account populations no longer produce oversized database requests.
+- Excluded disabled seed accounts from the directory by default while providing an explicit paged seed/test-account view.
+- Made current-location and map-location choices visually prominent, with an unmistakable selected state on the actionable control.
+- Replaced the weather temperature unit dropdown with a compact degree-unit toggle and corrected responsive control overlap.
+- Added privacy-aware reporter attribution directly to the full recent-activity detail modal.
+- Reframed Harvest Journal as a private history dashboard with summary metrics, filters, expandable details, deletion confirmation, and a dedicated new-harvest action.
+
+## 2026-08-13 — Unified reporting, configured limits, and realistic seed ownership
+
+- Kept Seen and Harvest inside one reversible reporting flow while preserving in-progress values when switching modes.
+- Harvest observations now use the same administrator-configured flock ranges as sightings, with consistent steppers for recovered birds and hunter counts.
+- Current-location and map-location choices now provide an explicit selected state only after coordinates are captured.
+- Public and owner report feeds now honor the administrator-configured maximum instead of hardcoded client limits and return pagination metadata.
+- Added idempotent linked-harvest creation so retrying a combined report cannot duplicate a private journal entry.
+- Added disabled, regionally distributed seed accounts and reassigned synthetic reports to those ordinary owners; the application contains no synthetic-data behavior branches.
+- Updated the two-year data generator to use the same seed-account ownership model for future dataset refreshes.
+
+## 2026-08-13 — Immediate location, private owner map, and numeric controls
+
+- Current-location selection now resolves immediately in the report form, shows progress or failure feedback, and retains the selected coordinates through submission.
+- Added a private authenticated map feed for exact owner report locations, rendered separately from randomized public activity and excluded from the owner’s aggregate query.
+- Standardized harvest hunter, observed-bird, and recovered-bird quantities as accessible button-driven steppers with press-and-hold adjustment.
+- Replaced typed weather temperature entry with the same optional stepper pattern and unit-aware limits.
+- Fixed photo lookup by sighting ID and prevented empty banded-report counts from rendering as a stray zero.
+## 2026-08-12 — Full-range map aggregation recovery
+
+- Restored national and regional aggregation over the complete selected timeframe instead of the newest 999 reports.
+- Passes both range boundaries to the privacy-safe aggregation function and applies output limits only after grid grouping.
+- Added a schema migration ledger and production preflight that fail deployment when required map functions are missing.
+- Recorded the persistent banded-map and full-range aggregation migrations so future promotions can verify database parity.
+## 2026-08-12 — Report context and control polish
+
+- Added consistent photo and banded-bird indicators to compact and full report details.
+- Added full band metadata for every banded bird entry in a multi-bird report.
+- Rebuilt category/refinement controls as cohesive segmented pills with an animated SVG chevron.
+- Normalized modal close-button glyph alignment across activity, details, account, and refinement views.
+
+## 2026-08-12 — Integrated report location and completion
+
+- Moved current, map, and saved-location choices into the protected-location card in the report form.
+- Preserves the full in-progress report while users temporarily choose a protected point on the map.
+- Opens the newly submitted report directly in its full details modal after the activity list refreshes.
+- Still opens report details when an attachment upload needs retrying, without creating a duplicate report.
+
+## 2026-08-12 — Reporting fallbacks and priority activity
+
+- Automatically switches denied or unavailable device-location reports into protected map selection so reporting remains possible without location permission.
+- Adds a compact, actionable photo indicator to report preview cards when an attachment exists.
+- Returns protected band encounters through an independent map endpoint so high-contrast stars remain visible at every zoom instead of being hidden by ordinary aggregation.
+- Keeps persistent banded markers subject to the selected timeframe and taxonomy filters while preserving randomized coordinates.
+
+## 2026-08-12 - Production two-year synthetic migration dataset
+
+- Added an idempotent, batch-tagged production dataset containing 150,000 synthetic reports across the preceding two years.
+- Weighted species, timing, flyway position, flock estimates, behavior, and observed weather from the enabled catalog configuration instead of using uniform random placement.
+- Kept generated locations within the continental portions of configured Pacific, Central, Mississippi, and Atlantic flyways.
+- Populated current count-range snapshots and multi-bird detail records so generated reports behave like reports created through the current application.
+- Added a small set of explicitly synthetic band encounters for validating prominent map stars and related workflows.
+- Added distribution summaries plus a dedicated rollback that removes only this synthetic batch.
 
 ## 2026-08-12 — Multi-bird reports and focused account navigation
 
@@ -527,3 +587,8 @@ This changelog is organized around explicit product build approvals and major de
 - Increased star contrast with category color, a substantial white outline, and a dark map-safe shadow.
 - Added a larger touch target plus visible hover and keyboard-focus feedback without turning the star into a circle.
 - Made the Edit Profile header fully opaque and isolated its scrolling content so fields no longer bleed above it.
+# 2026-08-12 — Inline bird reporting and mobile controls
+
+- Moved multi-bird entries and optional band details into the main report modal so the reporting workflow no longer depends on a floating side panel.
+- Added a mobile-safe category refinement trigger, horizontal filter scrolling, active-filter centering, and a bottom-sheet refinement layout with an explicit close control.
+- Replaced recovered-harvest count entry with an accessible numeric stepper that selects the current value for replacement and safely normalizes blank values to zero.
