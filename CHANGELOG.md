@@ -1,4 +1,14 @@
 # FeatherMap changelog
+## 2026-08-13 — Unified reporting, configured limits, and realistic seed ownership
+
+- Kept Seen and Harvest inside one reversible reporting flow while preserving in-progress values when switching modes.
+- Harvest observations now use the same administrator-configured flock ranges as sightings, with consistent steppers for recovered birds and hunter counts.
+- Current-location and map-location choices now provide an explicit selected state only after coordinates are captured.
+- Public and owner report feeds now honor the administrator-configured maximum instead of hardcoded client limits and return pagination metadata.
+- Added idempotent linked-harvest creation so retrying a combined report cannot duplicate a private journal entry.
+- Added disabled, regionally distributed seed accounts and reassigned synthetic reports to those ordinary owners; the application contains no synthetic-data behavior branches.
+- Updated the two-year data generator to use the same seed-account ownership model for future dataset refreshes.
+
 ## 2026-08-13 — Immediate location, private owner map, and numeric controls
 
 - Current-location selection now resolves immediately in the report form, shows progress or failure feedback, and retains the selected coordinates through submission.

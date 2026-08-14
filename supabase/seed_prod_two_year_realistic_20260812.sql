@@ -20,7 +20,10 @@ declare
   species_count integer;
   range_count integer;
 begin
-  select count(*) into profile_count from public.profiles;
+  select count(*) into profile_count
+  from public.profiles p
+  join auth.users u on u.id=p.id
+  where u.email like 'observer-%@seed.feather-map.invalid';
   select count(*) into species_count
   from public.species_catalog
   where enabled
@@ -30,7 +33,7 @@ begin
   where enabled and archived_at is null;
 
   if profile_count = 0 then
-    raise exception 'At least one FeatherMap profile is required before loading synthetic data';
+    raise exception 'Run migrate_reporting_workflow_seed_users.sql before loading seeded activity';
   end if;
   if species_count = 0 then
     raise exception 'No enabled species have configured migration flyways';
@@ -175,14 +178,14 @@ begin
       limit 1
     ) rr
   ),
-  synthetic_owner as (
-    -- Keep synthetic records off ordinary member accounts. The oldest profile
-    -- is the installation owner in existing deployments and is used only to
-    -- satisfy report ownership/FK requirements.
-    select id from public.profiles order by created_at,id limit 1
+  seed_owners as (
+    select u.id,
+      split_part(split_part(u.email,'observer-',2),'-',1) region
+    from auth.users u
+    where u.email like 'observer-%@seed.feather-map.invalid'
   )
   select
-    synthetic_owner.id,
+    owner.id,
     r.species_slug,
     case when r.bird_estimate<=10 then '1-10'
          when r.bird_estimate<=25 then '10-25'
@@ -205,7 +208,14 @@ begin
     case when r.observed_at>now()-interval '6 hours' then 'active' else 'expired' end,
     true,batch,r.range_slug,r.display_label,r.minimum_count,r.maximum_count,
     r.bird_estimate,'FeatherMap synthetic migration model'
-  from ranged r cross join synthetic_owner;
+  from ranged r
+  cross join lateral (
+    select so.id
+    from seed_owners so
+    where so.region=r.flyway
+    order by md5(r.n::text||so.id::text)
+    limit 1
+  ) owner;
 
   raise notice 'Inserted % synthetic sightings in batch %',
     (select count(*) from public.sightings where seed_batch_id=batch),batch;
