@@ -242,6 +242,8 @@ export default function Home() {
     const [placeResults, setPlaceResults] = useState<any[]>([]);
     const [savedIds, setSavedIds] = useState<string[]>([]);
     const [detailId, setDetailId] = useState("");
+    const [detailReturnPanel, setDetailReturnPanel] = useState<Panel>("map");
+    const detailWasOpen = useRef(false);
     const [cardOpen, setCardOpen] = useState(true);
     const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
     const [preferencesReady, setPreferencesReady] = useState(false);
@@ -448,6 +450,7 @@ export default function Home() {
         setHeatLoading(false); }), 220); return () => window.clearTimeout(timer); }, [preferencesReady, Math.floor(zoom * 2), timeDays, customRange.start, customRange.end, taxonFilters, token]);
     useEffect(() => { if (!detailId)
         return; Promise.all([request(`/api/sightings/${detailId}/photos`), request(`/api/sightings/${detailId}/comments`)]).then(([p, c]) => { setPhotos(p.photos || []); setComments(c.comments || []); }).catch(() => { setPhotos([]); setComments([]); }); }, [detailId]);
+    useEffect(() => { if (detailWasOpen.current && !detailId && detailReturnPanel !== "map") { setPanel(detailReturnPanel); setDetailReturnPanel("map"); } detailWasOpen.current = Boolean(detailId); }, [detailId, detailReturnPanel]);
     useEffect(() => { if (!selectedId || !token) {
         setConfirmationState({ confirmed: false, own_report: false, loading: false });
         return;
@@ -519,15 +522,16 @@ export default function Home() {
     else if (reporting)
         setReporting(false);
     else if (detailId)
-        setDetailId("");
+        closeDetail();
     else if (panel !== "map")
         setPanel("map");
     else if (cardOpen)
         setCardOpen(false); }; const outside = (event: PointerEvent) => { if (openCategory && !(event.target as HTMLElement).closest(".taxonomy-filter, .filter-composite"))
         setOpenCategory(""); }; window.addEventListener("keydown", close); window.addEventListener("pointerdown", outside); return () => { window.removeEventListener("keydown", close); window.removeEventListener("pointerdown", outside); }; }, [openCategory, feedbackOpen, authOpen, reporting, detailId, panel, cardOpen]);
-    function showReport(id: string) { setSelectedId(id); setCardOpen(true); setDetailId(id); setPanel("map"); }
+    function closeDetail() { setDetailId(""); if (detailReturnPanel !== "map") setPanel(detailReturnPanel); setDetailReturnPanel("map"); }
+    function showReport(id: string) { setSelectedId(id); setCardOpen(true); setDetailReturnPanel(panel); setDetailId(id); setPanel("map"); }
     function selectReport(id: string) { setSelectedId(id); setCardOpen(true); setDetailId(""); setPanel("map"); }
-    function openDetail(id: string) { setSelectedId(id); setCardOpen(true); setDetailId(id); }
+    function openDetail(id: string) { setSelectedId(id); setCardOpen(true); setDetailReturnPanel("map"); setDetailId(id); }
     function applyPreferences(next: Preferences) { const validDays = [1, 7, 30, 90, 180, 365]; const days = validDays.includes(Number(next.default_days)) ? Number(next.default_days) : 30; setPreferences({ ...defaultPreferences, ...next, default_days: days }); setMapView("density"); setTimeDays(days); }
     async function savePreferences(next: Preferences) { setPreferences(next); setPreferencesStatus("Saving…"); try {
         const data = await request("/api/profile", { method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ preferences: next }) });
@@ -864,15 +868,16 @@ export default function Home() {
         setConfirmationState(s => ({ ...s, loading: false, error: e instanceof Error ? e.message : "Confirmation failed" }));
     } }
     function deleteOwnReport(id: string) { if (!token || !confirmationState.own_report)
-        return; const target = reports.find(report => report.id === id); if (target)
+        return; const target = selectableReports.find(report => report.id === id); if (target)
         setDeleteReportTarget(target); }
     async function confirmDeleteReport() { if (!deleteReportTarget || deleteReportBusy)
         return; setDeleteReportBusy(true); setCommentStatus(""); try {
         await request(`/api/sightings/${deleteReportTarget.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
         setReports(rows => rows.filter(row => row.id !== deleteReportTarget.id));
+        setOwnedMapReports(rows => rows.filter(row => row.id !== deleteReportTarget.id));
         setSavedIds(ids => ids.filter(value => value !== deleteReportTarget.id));
-        setDetailId("");
-        setCardOpen(false);
+        closeDetail();
+        if (detailReturnPanel === "map") setCardOpen(false);
         setSelectedId("");
         setDeleteReportTarget(null);
     }

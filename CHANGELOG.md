@@ -1,5 +1,11 @@
 # FeatherMap changelog
 
+## 2026-08-14 — Activity navigation and selected-control contrast
+
+- Standardized selected Activity, Seen/Harvest, and report-location controls with theme-aware high-contrast colors.
+- Preserved the originating Activity or My Reports list when closing report details, including Escape and backdrop dismissal.
+- Kept report deletion inside the personal-report workflow and removed deleted reports from both public and owner collections.
+
 ## 2026-08-14 — Personal report history and owner map reliability
 
 - Added a dedicated My Reports view alongside Community Activity, plus a direct account shortcut.
