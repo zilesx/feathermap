@@ -1,4 +1,20 @@
 # FeatherMap changelog
+
+## 2026-08-14 — Personal report history and owner map reliability
+
+- Added a dedicated My Reports view alongside Community Activity, plus a direct account shortcut.
+- Kept a hunter's reports selectable at their exact private map locations without depending on the capped public activity feed.
+- Included active and expired owner reports inside the selected timeframe while continuing to exclude removed reports.
+- Added explicit owner-feed error feedback instead of silently clearing personal reports when a request fails.
+- Strengthened selected-location controls and clarified Harvest Journal summary labels and values across screen sizes.
+- Updated the production schema preflight to require the owner-excluding map aggregation function before deployment.
+
+## 2026-08-13 — Production synthetic-data refresh safety
+
+- Corrected synthetic Supabase Auth accounts to use a finite ban timestamp that GoTrue can deserialize.
+- Initialized all required Auth token fields so administrative user enumeration remains operational.
+- Preserved the fixed synthetic batch identifier so production cleanup removes only generated reports.
+- Added deterministic client report identifiers to generated band encounters so the seed satisfies production idempotency constraints.
 ## 2026-08-13 — Administrative scaling and reporting UX polish
 
 - Rebuilt the administrator user directory around bounded Auth paging and small profile batches so large account populations no longer produce oversized database requests.

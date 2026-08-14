@@ -178,6 +178,26 @@
 .report-time-panel{width:min(260px,calc(100vw - 2rem))}
 @media(max-width:640px){.report-location-card-actions{grid-template-columns:1fr}}
 
+/* Owner activity and account navigation */
+.activity-tabs{display:flex;gap:.55rem;margin:0 0 1rem;padding:.3rem;border:1px solid var(--border);border-radius:.8rem;background:var(--surface-raised)}
+.activity-tabs button{display:flex;align-items:center;justify-content:center;gap:.5rem;flex:1;min-height:2.8rem;border:0;border-radius:.6rem;background:transparent;color:var(--text-secondary);font-weight:800}
+.activity-tabs button.active{background:var(--accent);color:#102015}
+.activity-tabs button:disabled{cursor:not-allowed;opacity:.5}
+.activity-tabs button span{display:inline-grid;place-items:center;min-width:1.5rem;height:1.5rem;padding:0 .35rem;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent);font-size:.7rem}
+.panel-error{margin:0 0 1rem;padding:.8rem 1rem;border:1px solid color-mix(in srgb,var(--danger) 55%,var(--border));border-radius:.65rem;background:color-mix(in srgb,var(--danger) 9%,var(--surface-raised));color:var(--text-primary)}
+.owned-report-row{border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+.owner-label{display:inline-flex;margin-left:.4rem;padding:.12rem .42rem;border-radius:999px;background:color-mix(in srgb,var(--accent) 18%,var(--surface-raised));color:var(--accent-strong);font-size:.62rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+
+/* Make the actionable location choice carry the selected state. */
+.report-location-card-actions button.active:not(:disabled){border-color:var(--accent)!important;background:var(--accent)!important;color:#102015!important;opacity:1!important}
+
+/* Harvest metrics keep labels and values visually distinct at every width. */
+.harvest-summary-grid>div{display:grid;grid-template-columns:1fr;align-content:start;gap:.35rem;min-width:0}
+.harvest-summary-grid>div span{color:var(--text-muted);font-size:.7rem;font-weight:800;letter-spacing:.07em;line-height:1.25;text-transform:uppercase}
+.harvest-summary-grid>div b{color:var(--text-primary);font-size:1.35rem;line-height:1.15}
+.harvest-journal-entry summary>span:last-child{text-align:right}
+@media(max-width:640px){.activity-tabs{display:grid;grid-template-columns:1fr 1fr}.harvest-journal-entry summary>span:last-child{text-align:left}}
+
 /* Stable map, unified reporting, and composable taxonomy controls */
 .filter-composite {
   display: inline-flex;
