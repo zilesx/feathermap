@@ -1,4 +1,13 @@
 # FeatherMap changelog
+## 2026-08-13 — Administrative scaling and reporting UX polish
+
+- Rebuilt the administrator user directory around bounded Auth paging and small profile batches so large account populations no longer produce oversized database requests.
+- Excluded disabled seed accounts from the directory by default while providing an explicit paged seed/test-account view.
+- Made current-location and map-location choices visually prominent, with an unmistakable selected state on the actionable control.
+- Replaced the weather temperature unit dropdown with a compact degree-unit toggle and corrected responsive control overlap.
+- Added privacy-aware reporter attribution directly to the full recent-activity detail modal.
+- Reframed Harvest Journal as a private history dashboard with summary metrics, filters, expandable details, deletion confirmation, and a dedicated new-harvest action.
+
 ## 2026-08-13 — Unified reporting, configured limits, and realistic seed ownership
 
 - Kept Seen and Harvest inside one reversible reporting flow while preserving in-progress values when switching modes.
