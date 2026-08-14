@@ -322,6 +322,16 @@
 .harvest-count-stepper button { min-width:2.75rem;min-height:2.75rem;padding:0;font-size:1.2rem;font-weight:800 }
 .harvest-count-stepper input { width:100%;min-width:0;text-align:center;border-radius:0 }
 
+.numeric-stepper { display:grid;grid-template-columns:2.75rem minmax(4.5rem,1fr) 2.75rem;align-items:stretch;min-width:0 }
+.numeric-stepper button { min-width:2.75rem;min-height:2.75rem;padding:0;font-size:1.2rem;font-weight:800 }
+.numeric-stepper output { display:grid;place-items:center;min-height:2.75rem;padding:.45rem .7rem;border-block:1px solid var(--line);background:var(--surface-input);font-weight:800;font-variant-numeric:tabular-nums }
+.numeric-stepper .stepper-clear { grid-column:1/-1;min-height:1.8rem;font-size:.72rem;border-radius:0 0 .45rem .45rem }
+.temperature-entry { display:grid !important;grid-template-columns:minmax(12rem,1fr) 5rem;gap:.5rem;align-items:start }
+.report-location-state { display:block;margin-top:.35rem;font-weight:700 }
+.report-location-state.loading { opacity:.8 }
+.report-location-state.selected { color:var(--accent) }
+.report-location-state.error { color:var(--danger) }
+
 /* Cohesive category controls and consistently centered modal dismissal affordances. */
 .filters .filter-composite{display:inline-flex;align-items:stretch;overflow:hidden;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface-raised);box-shadow:var(--shadow-soft)}
 .filters .filter-composite .filter,.filters .filter-composite .filter-refine{height:2.55rem;margin:0;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--text-primary)}

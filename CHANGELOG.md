@@ -1,4 +1,17 @@
 # FeatherMap changelog
+## 2026-08-13 — Immediate location, private owner map, and numeric controls
+
+- Current-location selection now resolves immediately in the report form, shows progress or failure feedback, and retains the selected coordinates through submission.
+- Added a private authenticated map feed for exact owner report locations, rendered separately from randomized public activity and excluded from the owner’s aggregate query.
+- Standardized harvest hunter, observed-bird, and recovered-bird quantities as accessible button-driven steppers with press-and-hold adjustment.
+- Replaced typed weather temperature entry with the same optional stepper pattern and unit-aware limits.
+- Fixed photo lookup by sighting ID and prevented empty banded-report counts from rendering as a stray zero.
+## 2026-08-12 — Full-range map aggregation recovery
+
+- Restored national and regional aggregation over the complete selected timeframe instead of the newest 999 reports.
+- Passes both range boundaries to the privacy-safe aggregation function and applies output limits only after grid grouping.
+- Added a schema migration ledger and production preflight that fail deployment when required map functions are missing.
+- Recorded the persistent banded-map and full-range aggregation migrations so future promotions can verify database parity.
 ## 2026-08-12 — Report context and control polish
 
 - Added consistent photo and banded-bird indicators to compact and full report details.
