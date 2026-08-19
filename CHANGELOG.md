@@ -1,4 +1,11 @@
 # FeatherMap changelog
+## 2026-08-18 — Actionable moderation and selected-control regression fix
+
+- Kept automatic proximity and repeated-band matches in the duplicate-candidate workflow without creating moderator tasks for ordinary bird reports.
+- Restricted the active staff review count to actionable, unresolved moderation cases and closed previously generated duplicate-only cases through an idempotent migration.
+- Restored unmistakable selected styling across location choices, activity views, and report-type controls.
+- Synchronized captured location coordinates with the visual selected state so the confirmation message and highlighted control cannot disagree.
+
 ## 2026-08-18 — Consistent map activity and actionable activity tabs
 
 - Unified community, owner, aggregate, and banded activity around the same selected date and bird filters while keeping exact owner reports distinct and unaggregated.
