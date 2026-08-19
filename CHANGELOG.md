@@ -1,4 +1,11 @@
 # FeatherMap changelog
+## 2026-08-19 — Durable report controls and category-driven taxonomy
+
+- Replaced the invalid legacy accent token with FeatherMap's canonical light/dark theme tokens so selected report type, location, activity, and temperature controls remain unmistakable.
+- Restored full contrast for unselected controls and reserved muted styling for genuinely disabled actions.
+- Added the configured bird category to every report bird entry and filtered species and optional subspecies through the selected taxonomy hierarchy.
+- Reset incompatible species and subspecies values when a parent category changes while preserving valid report drafts.
+
 ## 2026-08-18 — Actionable moderation and selected-control regression fix
 
 - Kept automatic proximity and repeated-band matches in the duplicate-candidate workflow without creating moderator tasks for ordinary bird reports.
