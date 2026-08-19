@@ -1,4 +1,13 @@
 # FeatherMap changelog
+## 2026-08-18 — Consistent map activity and actionable activity tabs
+
+- Unified community, owner, aggregate, and banded activity around the same selected date and bird filters while keeping exact owner reports distinct and unaggregated.
+- Included the complete final day in custom date ranges and restored active or expired owner reports that still fall inside the selected timeframe.
+- Reworked background polling so it announces new activity without silently replacing map data or moving the user’s camera; refreshing updates map and activity data together.
+- Added visible row-level markers for newly loaded activity, owner reports, photos, and band encounters.
+- Hardened My Reports against incomplete records and kept report details anchored to the list that opened them.
+- Separated ordinary new-activity dots from staff review shields and aligned the review summary with the rest of the activity interface.
+
 ## 2026-08-13 — Administrative scaling and reporting UX polish
 
 - Rebuilt the administrator user directory around bounded Auth paging and small profile batches so large account populations no longer produce oversized database requests.

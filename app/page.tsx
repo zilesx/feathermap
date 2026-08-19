@@ -45,6 +45,8 @@ type MapReport = LiveReport & {
     size: number;
     color: string;
     age: string;
+    owner?: boolean;
+    status?: string;
 };
 type Panel = "map" | "activity" | "saved" | "more" | "admin";
 type Filter = string;
@@ -96,7 +98,7 @@ type CountRange = {
     sort_order: number;
 };
 type BandedMapReport = { id: string; sighting_id: string; species: string; subspecies?: string | null; zone_latitude: number; zone_longitude: number; occurred_at: string };
-type OwnedMapReport = { id: string; species: string; subspecies?: string | null; latitude: number; longitude: number; estimated_birds?: number | null; occurred_at: string };
+type OwnedMapReport = { id: string; species: string; subspecies?: string | null; latitude: number; longitude: number; estimated_birds?: number | null; flock_size?: string; behavior?: string; confidence?: number; confirmations?: number; notes?: string | null; observed_weather?: Record<string, any> | null; status?: string; occurred_at: string; reporter_name?: string; owner?: boolean; has_photo?: boolean; report_type?: "sighting" | "banded"; banded?: Record<string, any> | null; banded_entries?: LiveReport["banded_entries"] };
 type ReportBirdEntry = {
     id: string;
     species: string;
@@ -220,9 +222,14 @@ export default function Home() {
     const [panel, setPanel] = useState<Panel>("map");
     const [activityView, setActivityView] = useState<"community" | "mine" | "review">("community");
     const [newActivityCount, setNewActivityCount] = useState(0);
+    const [pendingActivityIds, setPendingActivityIds] = useState<string[]>([]);
+    const [highlightedActivityIds, setHighlightedActivityIds] = useState<string[]>([]);
     const [reviewTaskCount, setReviewTaskCount] = useState(0);
     const [mapRefreshAvailable, setMapRefreshAvailable] = useState(false);
-    const lastCommunityReport = useRef("");
+    const [refreshTick, setRefreshTick] = useState(0);
+    const [detailReturnPanel, setDetailReturnPanel] = useState<Panel>("map");
+    const reportsRef = useRef<MapReport[]>([]);
+    const refreshGeneration = useRef(0);
     const [filter, setFilter] = useState<Filter>("all");
     const [catalog, setCatalog] = useState<CatalogSpecies[]>([]);
     const [categories, setCategories] = useState<CatalogCategory[]>([]);
@@ -378,7 +385,23 @@ export default function Home() {
     });
     const categoryRing = (cell: HeatCell) => { const entries = Object.entries(cell.category_breakdown || {}), total = entries.reduce((sum, [, value]) => sum + Number(value.birds || 0), 0); if (!total)
         return categoryColor(cell.dominant_category); let cursor = 0; return `conic-gradient(${entries.map(([slug, value]) => { const start = cursor; cursor += Number(value.birds || 0) / total * 100; return `${categoryColor(slug)} ${start.toFixed(1)}% ${cursor.toFixed(1)}%`; }).join(",")})`; };
-    const visibleReports = useMemo(() => reports.filter(r => preferences.visible_groups.includes(categoryFor(r.species)) && (filter === "all" || filter === categoryFor(r.species)) && (taxonFilters === null || taxonFilters.includes(r.subspecies || r.species))), [reports, filter, taxonFilters, preferences.visible_groups, catalog]);
+    const ownedDisplayReports = useMemo<MapReport[]>(() => ownedMapReports.map(report => ({
+        ...report,
+        zone_latitude: Number(report.latitude),
+        zone_longitude: Number(report.longitude),
+        x: position(Number(report.latitude), 1),
+        y: position(Number(report.longitude), 2),
+        size: 76,
+        color: categoryColor(categoryFor(report.species)),
+        age: age(report.occurred_at),
+        flock_size: report.flock_size || (report.estimated_birds ? String(report.estimated_birds) : "Count not specified"),
+        behavior: report.behavior || "reported",
+        confidence: Number(report.confidence) || 0,
+        confirmations: Number(report.confirmations) || 0,
+        reporter_name: "You",
+        owner: true
+    })), [ownedMapReports, catalog, categories]);
+    const visibleReports = useMemo(() => { const ownerIds = new Set(ownedDisplayReports.map(report => report.id)); return [...ownedDisplayReports, ...reports.filter(report => !ownerIds.has(report.id))].filter(r => preferences.visible_groups.includes(categoryFor(r.species)) && (filter === "all" || filter === categoryFor(r.species)) && (taxonFilters === null || taxonFilters.includes(r.subspecies || r.species))); }, [reports, ownedDisplayReports, filter, taxonFilters, preferences.visible_groups, catalog]);
     const heatCells = useMemo(() => { if (taxonFilters !== null)
         return []; const allowedGroups = new Set(preferences.visible_groups); const filtered = rawHeatCells.map(cell => { const breakdown = cell.category_breakdown || {}; const entries = Object.entries(breakdown).filter(([slug]) => allowedGroups.has(slug) && (filter === "all" || filter === slug)); if (!entries.length) {
             if (filter === "all" && allowedGroups.has(cell.dominant_category) && !Object.keys(breakdown).length)
@@ -386,8 +409,9 @@ export default function Home() {
             return null;
         } const reportCount = entries.reduce((sum, [, value]) => sum + Number(value.reports || 0), 0), estimatedBirds = entries.reduce((sum, [, value]) => sum + Number(value.birds || 0), 0), dominantCategory = entries.reduce((best, entry) => Number(entry[1].birds || 0) > Number(best[1].birds || 0) ? entry : best)[0]; return { ...cell, report_count: reportCount, estimated_birds: estimatedBirds, dominant_category: dominantCategory, category_breakdown: Object.fromEntries(entries) }; }).filter(Boolean) as HeatCell[]; const maximum = Math.max(1, ...filtered.map(cell => cell.estimated_birds || cell.report_count)); return filtered.map(cell => ({ ...cell, intensity: Math.max(.18, Math.min(1, (cell.estimated_birds || cell.report_count) / maximum)) })); }, [rawHeatCells, filter, taxonFilters, preferences.visible_groups]);
     const savedReports = useMemo(() => reports.filter(r => savedIds.includes(r.id)), [reports, savedIds]);
-    const selected = useMemo(() => reports.find(r => r.id === selectedId) || visibleReports[0], [reports, visibleReports, selectedId]);
-    const detail = useMemo(() => reports.find(r => r.id === detailId), [reports, detailId]);
+    const selectableReports = useMemo(() => { const ownerIds = new Set(ownedDisplayReports.map(report => report.id)); return [...ownedDisplayReports, ...reports.filter(report => !ownerIds.has(report.id))]; }, [ownedDisplayReports, reports]);
+    const selected = useMemo(() => selectableReports.find(r => r.id === selectedId) || visibleReports[0], [selectableReports, visibleReports, selectedId]);
+    const detail = useMemo(() => selectableReports.find(r => r.id === detailId), [selectableReports, detailId]);
     const mapGeometry = useMemo(() => { const centerPx = project(center.lat, center.lon, zoom); const size = 256 * 2 ** zoom; const tileZoom = Math.floor(zoom); const scale = 2 ** (zoom - tileZoom); const tileCenter = project(center.lat, center.lon, tileZoom); const minX = Math.floor((tileCenter.x - viewport.width / (2 * scale)) / 256) - 1, maxX = Math.floor((tileCenter.x + viewport.width / (2 * scale)) / 256) + 1, minY = Math.max(0, Math.floor((tileCenter.y - viewport.height / (2 * scale)) / 256) - 1), maxY = Math.min(2 ** tileZoom - 1, Math.floor((tileCenter.y + viewport.height / (2 * scale)) / 256) + 1); const tiles = []; for (let y = minY; y <= maxY; y++)
         for (let x = minX; x <= maxX; x++) {
             const wrapped = ((x % (2 ** tileZoom)) + 2 ** tileZoom) % (2 ** tileZoom);
@@ -405,23 +429,37 @@ export default function Home() {
     const activeActivityCount = useAggregateActivity ? activityCanvasPoints.length + bandedReportCount + ownedFilteredCount : visibleReports.length;
     const activityIsLoading = loading || (useAggregateActivity && heatLoading);
     function rangeQuery() { return timeDays === 0 && customRange.start && customRange.end ? `start=${encodeURIComponent(customRange.start)}&end=${encodeURIComponent(customRange.end)}` : `days=${timeDays}`; }
-    async function load(markNew = false) { try {
+    async function load(highlightNew = false) { try {
         const data = await request(`/api/sightings?${rangeQuery()}`);
         const mapped = (data.sightings || []).map((r: LiveReport) => ({ ...r, x: position(r.zone_latitude, 1), y: position(r.zone_longitude, 2), size: 68 + Math.round(flockDotScale(r.flock_size, Number(r.estimated_birds)) * 40), color: colors[r.species] || "gray", age: age(r.occurred_at) }));
-        const newest = mapped[0]?.id || "";
-        if (markNew && lastCommunityReport.current && newest && newest !== lastCommunityReport.current) {
-            const previousIndex = mapped.findIndex((report: MapReport) => report.id === lastCommunityReport.current);
-            setNewActivityCount(previousIndex < 0 ? 1 : Math.max(1, previousIndex));
-            setMapRefreshAvailable(true);
-        }
-        lastCommunityReport.current = newest;
+        if (highlightNew) setHighlightedActivityIds(pendingActivityIds.length ? pendingActivityIds : mapped.filter((report: MapReport) => !reportsRef.current.some(current => current.id === report.id)).map((report: MapReport) => report.id));
+        else if (pendingActivityIds.length) { setHighlightedActivityIds(pendingActivityIds); setPendingActivityIds([]); }
+        reportsRef.current = mapped;
         setReports(mapped);
+        setRefreshTick(value => value + 1);
         if (mapped[0])
             setSelectedId(v => v || mapped[0].id);
     }
     finally {
         setLoading(false);
     } }
+    async function checkForNewActivity() {
+        const data = await request(`/api/sightings?${rangeQuery()}`);
+        const known = new Set(reportsRef.current.map(report => report.id));
+        const pending = (data.sightings || []).map((report: LiveReport) => report.id).filter((id: string) => !known.has(id));
+        setPendingActivityIds(pending);
+        setNewActivityCount(pending.length);
+        setMapRefreshAvailable(pending.length > 0);
+    }
+    async function refreshActivity() {
+        const generation = ++refreshGeneration.current;
+        await Promise.all([load(true), loadOwnedReports(), request(`/api/map/banded?${rangeQuery()}`).then(data => { if (generation === refreshGeneration.current) setBandedMapReports(data.reports || []); })]);
+        if (generation !== refreshGeneration.current) return;
+        setPendingActivityIds([]);
+        setNewActivityCount(0);
+        setMapRefreshAvailable(false);
+        setRefreshTick(value => value + 1);
+    }
     useEffect(() => { const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight }); resize(); window.addEventListener("resize", resize); setSavedIds(JSON.parse(localStorage.getItem("flyway_saved") || "[]")); const saved = localStorage.getItem("flyway_session"); if (saved) {
         const s = JSON.parse(saved);
         setToken(s.access_token);
@@ -434,7 +472,7 @@ export default function Home() {
     useEffect(() => { if (!preferencesReady) return; request(`/api/map/banded?${rangeQuery()}`).then(data => setBandedMapReports(data.reports || [])).catch(() => setBandedMapReports([])); }, [preferencesReady, timeDays, customRange.start, customRange.end]);
     async function loadOwnedReports() { if (!token) { setOwnedMapReports([]); return []; } const data = await request(`/api/sightings/mine/map?${rangeQuery()}`, { headers: { Authorization: `Bearer ${token}` } }); const next = data.reports || []; setOwnedMapReports(next); return next; }
     useEffect(() => { if (!preferencesReady || !token) { setOwnedMapReports([]); return; } void loadOwnedReports().catch(() => setOwnedMapReports([])); }, [preferencesReady, token, timeDays, customRange.start, customRange.end]);
-    useEffect(() => { if (!preferencesReady) return; const refresh = () => { if (document.visibilityState !== "visible" || reporting || selectingReportLocation) return; void load(true); if (token) void loadOwnedReports().catch(() => {}); }; const timer = window.setInterval(refresh, 60000); const visible = () => document.visibilityState === "visible" && refresh(); document.addEventListener("visibilitychange", visible); return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", visible); }; }, [preferencesReady, token, reporting, selectingReportLocation, timeDays, customRange.start, customRange.end]);
+    useEffect(() => { if (!preferencesReady) return; const poll = () => { if (document.visibilityState !== "visible" || reporting || selectingReportLocation || !navigator.onLine) return; void checkForNewActivity().catch(() => {}); }; const timer = window.setInterval(poll, 60000); const visible = () => document.visibilityState === "visible" && poll(); document.addEventListener("visibilitychange", visible); return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", visible); }; }, [preferencesReady, reporting, selectingReportLocation, timeDays, customRange.start, customRange.end]);
     useEffect(() => { if (!token || !profile || profile.role === "user") { setReviewTaskCount(0); return; } const check = () => request("/api/admin/moderation?status=active", { headers: { Authorization: `Bearer ${token}` } }).then(data => setReviewTaskCount(Number(data.cases?.length || data.total || 0))).catch(() => setReviewTaskCount(0)); void check(); const timer = window.setInterval(check, 60000); return () => window.clearInterval(timer); }, [token, profile?.role]);
     useEffect(() => { request("/api/catalog").then(data => { const next = data.species || [], ranges = data.count_ranges || []; setCatalog(next); setCategories(data.categories || []); setSubspeciesCatalog(data.subspecies || []); setCountRanges(ranges); Object.keys(amountValues).forEach(key => delete amountValues[key]); ranges.slice(0, 8).forEach((item: CountRange) => amountValues[item.slug] = formatCountRange(item)); setSpecies(current => next.some((item: CatalogSpecies) => item.slug === current) ? current : next[0]?.slug || ""); setAmount(current => ranges.some((item: CountRange) => item.slug === current) ? current : ranges[0]?.slug || ""); }).catch(() => { }); }, []);
     useEffect(() => {
@@ -456,7 +494,7 @@ export default function Home() {
     } setHeatCells([]); setHeatLoading(true); const timer = window.setTimeout(() => request(`/api/map/heatmap?${rangeQuery()}&zoom=${zoom.toFixed(1)}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined).then(data => { if (requestId === heatRequest.current)
         setHeatCells(data.cells || []); }).catch(() => { if (requestId === heatRequest.current)
         setHeatCells([]); }).finally(() => { if (requestId === heatRequest.current)
-        setHeatLoading(false); }), 220); return () => window.clearTimeout(timer); }, [preferencesReady, Math.floor(zoom * 2), timeDays, customRange.start, customRange.end, taxonFilters, token]);
+        setHeatLoading(false); }), 220); return () => window.clearTimeout(timer); }, [preferencesReady, Math.floor(zoom * 2), timeDays, customRange.start, customRange.end, taxonFilters, token, refreshTick]);
     useEffect(() => { if (!detailId) return; const refresh = () => Promise.all([request(`/api/sightings/${detailId}/photos`), request(`/api/sightings/${detailId}/comments`)]).then(([p, c]) => { setPhotos(p.photos || []); setComments(c.comments || []); }).catch(() => {}); void refresh(); const timer = window.setInterval(refresh, 20000); return () => window.clearInterval(timer); }, [detailId]);
     useEffect(() => { if (!selectedId || !token) {
         setConfirmationState({ confirmed: false, own_report: false, loading: false });
@@ -535,9 +573,10 @@ export default function Home() {
     else if (cardOpen)
         setCardOpen(false); }; const outside = (event: PointerEvent) => { if (openCategory && !(event.target as HTMLElement).closest(".taxonomy-filter, .filter-composite"))
         setOpenCategory(""); }; window.addEventListener("keydown", close); window.addEventListener("pointerdown", outside); return () => { window.removeEventListener("keydown", close); window.removeEventListener("pointerdown", outside); }; }, [openCategory, feedbackOpen, authOpen, reporting, detailId, panel, cardOpen]);
-    function showReport(id: string) { setSelectedId(id); setCardOpen(true); setDetailId(id); setPanel("map"); }
+    function showReport(id: string) { setDetailReturnPanel(panel); setSelectedId(id); setCardOpen(true); setDetailId(id); }
     function selectReport(id: string) { setSelectedId(id); setCardOpen(true); setDetailId(""); setPanel("map"); }
-    function openDetail(id: string) { setSelectedId(id); setCardOpen(true); setDetailId(id); }
+    function openDetail(id: string) { setDetailReturnPanel(panel); setSelectedId(id); setCardOpen(true); setDetailId(id); }
+    function closeDetail() { setDetailId(""); setPanel(detailReturnPanel); }
     function applyPreferences(next: Preferences) { const validDays = [1, 7, 30, 90, 180, 365]; const days = validDays.includes(Number(next.default_days)) ? Number(next.default_days) : 30; setPreferences({ ...defaultPreferences, ...next, default_days: days }); setMapView("density"); setTimeDays(days); }
     async function savePreferences(next: Preferences) { setPreferences(next); setPreferencesStatus("Saving…"); try {
         const data = await request("/api/profile", { method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ preferences: next }) });
@@ -917,7 +956,7 @@ export default function Home() {
     finally {
         setSessionRefreshing(false);
     } }
-    const reportList = (items: MapReport[], empty: string) => <div className="activity-list" aria-live="polite">{items.length ? items.map(r => <button className="activity-row" aria-label={`Open ${displayLabel(r.species)} report by ${r.reporter_name || "FeatherMap member"}`} key={r.id} onClick={() => showReport(r.id)}><span className={`duck-badge ${r.color}`} aria-hidden="true">⌁</span><span><b>{displayLabel(r.species)}</b><small>{r.flock_size} birds · {labels[r.behavior]} · {r.reporter_name || "FeatherMap member"}</small></span><span className="row-meta">{r.age}<small>{r.confidence}% confidence</small></span></button>) : <div className="panel-empty">{empty}</div>}</div>;
+    const reportList = (items: MapReport[], empty: string) => <div className="activity-list" aria-live="polite">{items.length ? items.map(r => { const isNew=highlightedActivityIds.includes(r.id), behaviorLabel=labels[r.behavior] || String(r.behavior || "Reported activity").replaceAll("_", " "); return <button className={`activity-row${r.owner ? " owned-report-row" : ""}${isNew ? " new-activity-row" : ""}`} aria-label={`Open ${displayLabel(r.species)} report by ${r.reporter_name || "FeatherMap member"}`} key={r.id} onClick={() => showReport(r.id)}><span className={`duck-badge ${r.color || "gray"}`} aria-hidden="true">⌁</span><span><b>{displayLabel(r.species)}</b><small>{r.flock_size || "Reported"} birds · {behaviorLabel} · {r.reporter_name || "FeatherMap member"}</small><span className="activity-row-flags">{isNew && <i>New</i>}{r.owner && <i>Your report</i>}{r.has_photo && <i>Photo</i>}{(r.report_type === "banded" || Boolean(r.banded) || (r.banded_entries?.length ?? 0)>0) && <i>Banded</i>}</span></span><span className="row-meta">{r.age || age(r.occurred_at)}<small>{Number(r.confidence)||0}% confidence</small></span></button>}) : <div className="panel-empty">{empty}</div>}</div>;
     const ownedIds = new Set(ownedMapReports.map(report => report.id));
     const mapActivity = visibleReports.filter(report => !ownedIds.has(report.id)).map(report => ({ id: report.id, latitude: Number(report.zone_latitude), longitude: Number(report.zone_longitude), color: categoryColor(categoryFor(report.species)), birds: Math.max(1, Number(report.estimated_birds) || Number(String(report.flock_size).replace(/[^0-9]/g, "")) || 1), banded: report.report_type === "banded" }));
     const aggregateActivity = heatCells.map((cell, index) => ({ id: `aggregate-${index}`, latitude: Number(cell.cell_latitude), longitude: Number(cell.cell_longitude), color: categoryColor(cell.dominant_category), birds: Math.max(1, Number(cell.estimated_birds) || Number(cell.report_count) || 1) }));
