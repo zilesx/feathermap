@@ -288,6 +288,35 @@
   transition: transform .15s ease;
 }
 :root[data-theme] .filter-refine[aria-expanded="true"] { transform: none; }
+
+/* Selected controls use one semantic treatment across every theme. Keep this
+   after the general button normalization so later theme rules cannot erase it. */
+:root[data-theme] :is(
+  .report-type-selector button.active,
+  .report-location-card-actions button.active,
+  .activity-tabs button.active,
+  .temperature-unit button.active
+) {
+  background: var(--fm-accent) !important;
+  color: var(--fm-accent-text) !important;
+  border-color: var(--fm-accent) !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--fm-accent) 30%, transparent) !important;
+}
+:root[data-theme] :is(
+  .report-type-selector button:not(.active):not(:disabled),
+  .report-location-card-actions button:not(.active):not(:disabled),
+  .activity-tabs button:not(.active):not(:disabled)
+) {
+  background: var(--fm-control) !important;
+  color: var(--fm-text) !important;
+  border-color: var(--fm-border-strong) !important;
+  opacity: 1 !important;
+}
+:root[data-theme] .report-location-card-actions button:disabled {
+  background: var(--fm-surface-2) !important;
+  color: var(--fm-text-muted) !important;
+}
 :root[data-theme] .filter-refine[aria-expanded="true"] > span { transform: rotate(180deg); }
 :root[data-theme] :is(.time-filter, .area, .timeframe-control .custom-range) {
   background: var(--fm-control) !important;

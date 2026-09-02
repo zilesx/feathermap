@@ -1,11 +1,27 @@
 # FeatherMap changelog
+## 2026-08-19 — Durable report controls and category-driven taxonomy
 
-## 2026-08-13 — Production synthetic-data refresh safety
+- Replaced the invalid legacy accent token with FeatherMap's canonical light/dark theme tokens so selected report type, location, activity, and temperature controls remain unmistakable.
+- Restored full contrast for unselected controls and reserved muted styling for genuinely disabled actions.
+- Added the configured bird category to every report bird entry and filtered species and optional subspecies through the selected taxonomy hierarchy.
+- Reset incompatible species and subspecies values when a parent category changes while preserving valid report drafts.
 
-- Corrected synthetic Supabase Auth accounts to use a finite ban timestamp that GoTrue can deserialize.
-- Initialized all required Auth token fields so administrative user enumeration remains operational.
-- Preserved the fixed synthetic batch identifier so production cleanup removes only generated reports.
-- Added deterministic client report identifiers to generated band encounters so the seed satisfies production idempotency constraints.
+## 2026-08-18 — Actionable moderation and selected-control regression fix
+
+- Kept automatic proximity and repeated-band matches in the duplicate-candidate workflow without creating moderator tasks for ordinary bird reports.
+- Restricted the active staff review count to actionable, unresolved moderation cases and closed previously generated duplicate-only cases through an idempotent migration.
+- Restored unmistakable selected styling across location choices, activity views, and report-type controls.
+- Synchronized captured location coordinates with the visual selected state so the confirmation message and highlighted control cannot disagree.
+
+## 2026-08-18 — Consistent map activity and actionable activity tabs
+
+- Unified community, owner, aggregate, and banded activity around the same selected date and bird filters while keeping exact owner reports distinct and unaggregated.
+- Included the complete final day in custom date ranges and restored active or expired owner reports that still fall inside the selected timeframe.
+- Reworked background polling so it announces new activity without silently replacing map data or moving the user’s camera; refreshing updates map and activity data together.
+- Added visible row-level markers for newly loaded activity, owner reports, photos, and band encounters.
+- Hardened My Reports against incomplete records and kept report details anchored to the list that opened them.
+- Separated ordinary new-activity dots from staff review shields and aligned the review summary with the rest of the activity interface.
+
 ## 2026-08-13 — Administrative scaling and reporting UX polish
 
 - Rebuilt the administrator user directory around bounded Auth paging and small profile batches so large account populations no longer produce oversized database requests.
@@ -592,3 +608,14 @@ This changelog is organized around explicit product build approvals and major de
 - Moved multi-bird entries and optional band details into the main report modal so the reporting workflow no longer depends on a floating side panel.
 - Added a mobile-safe category refinement trigger, horizontal filter scrolling, active-filter centering, and a bottom-sheet refinement layout with an explicit close control.
 - Replaced recovered-harvest count entry with an accessible numeric stepper that selects the current value for replacement and safely normalizes blank values to zero.
+
+# 2026-08-18 — Live activity, staff attention, and account security
+
+- Added periodic map and owner-report synchronization with a visible new-activity refresh action.
+- Added separate new-community-activity and staff-review indicators to the Activity navigation.
+- Added Community, My Reports, and staff-only Review views within Activity.
+- Kept report details fresh while open and refreshed the owner map immediately after submission.
+- Replaced the world-view control with a subtle reset near the current or last confirmed report location.
+- Added a persistent mobile location-status indicator without exposing coordinates.
+- Moved session management into Password & Security and added individual-device sign-out.
+- Added non-production environment identification and a completed password-recovery success state.
