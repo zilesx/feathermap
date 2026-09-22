@@ -159,13 +159,15 @@ function project(lat: number, lon: number, zoom: number) { const size = 256 * 2 
 function unproject(x: number, y: number, zoom: number): MapCenter { const size = 256 * 2 ** zoom; const lon = x / size * 360 - 180; const n = Math.PI - 2 * Math.PI * y / size; return { lat: 180 / Math.PI * Math.atan(Math.sinh(n)), lon: ((lon + 540) % 360) - 180 }; }
 let pendingReportSubspecies = "";
 let pendingReportCountRange = "";
-async function request(path: string, options: RequestInit = {}) { if (path === "/api/sightings" && options.method === "POST" && typeof options.body === "string") {
+async function request(path: string, options: RequestInit = {}) { const reportSubmission=path==="/api/sightings"&&options.method==="POST";const requestId=reportSubmission?crypto.randomUUID():"";if (reportSubmission && typeof options.body === "string") {
     const payload = JSON.parse(options.body);
-    options = { ...options, body: JSON.stringify({ ...payload, subspecies: pendingReportSubspecies || null, count_range: pendingReportCountRange || payload.count_range }) };
+    options = { ...options, headers:{...Object.fromEntries(new Headers(options.headers).entries()),"X-FeatherMap-Request-Id":requestId}, body: JSON.stringify({ ...payload, subspecies: pendingReportSubspecies || null, count_range: pendingReportCountRange || payload.count_range }) };
+    console.info("report_submission",{request_id:requestId,stage:"dispatch",client_report_id:payload.client_report_id,entry_count:Array.isArray(payload.entries)?payload.entries.length:1});
 } let res: Response; try {
     res = await fetch(`${API}${path}`, options);
 }
 catch (cause) {
+    if(reportSubmission)console.error("report_submission",{request_id:requestId,stage:"connection_failed",cause});
     throw networkError(operationFor(path, String(options.method || "GET").toUpperCase()), cause);
 } const text = await res.text(); let data: any = null; try {
     data = text ? JSON.parse(text) : null;
@@ -175,8 +177,8 @@ catch {
 } if (!res.ok) {
     if (res.status === 401 && typeof window !== "undefined")
         window.dispatchEvent(new CustomEvent("feathermap:session-expired"));
-    throw new Error(data?.error || `Request failed (${res.status})`);
-} return data; }
+    const reference=data?.request_id||res.headers.get("X-FeatherMap-Request-Id")||requestId;const message=data?.error||`Request failed (${res.status})`;if(reportSubmission)console.error("report_submission",{request_id:reference,stage:"rejected",status:res.status,code:data?.code,details:data?.details,hint:data?.hint});throw new Error(`${message}${reference?` Reference: ${reference}`:""}`);
+} if(reportSubmission)console.info("report_submission",{request_id:data?.request_id||res.headers.get("X-FeatherMap-Request-Id")||requestId,stage:"persisted",sighting_id:data?.id});return data; }
 function qrSource(value: unknown) { const text = String(value || "").trim(); if (!text)
     return ""; if (text.startsWith("data:image/") || /^https:\/\//i.test(text))
     return text; if (text.startsWith("<svg") || text.startsWith("<?xml"))

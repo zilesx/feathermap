@@ -16,7 +16,7 @@ function cors(origin) {
   const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : "";
   return {
     ...(allowed ? { "Access-Control-Allow-Origin": allowed } : {}),
-    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-FeatherMap-Version, X-FeatherMap-Platform",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-FeatherMap-Version, X-FeatherMap-Platform, X-FeatherMap-Request-Id",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Vary": "Origin",
   };
@@ -54,21 +54,32 @@ function rateLimit(req, max = 60) {
   if (count > max) throw Object.assign(new Error("Rate limit exceeded"), { status: 429 });
 }
 
-async function supabase(path, { method = "GET", token = SERVICE_KEY, data, prefer } = {}) {
-  const response = await fetch(`${SUPABASE_URL}${path}`, {
-    method,
-    headers: {
-      apikey: token,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...(prefer ? { Prefer: prefer } : {}),
-    },
-    body: data === undefined ? undefined : JSON.stringify(data),
-  });
+async function supabase(path, { method = "GET", token = SERVICE_KEY, data, prefer, traceId } = {}) {
+  let response;
+  try {
+    response = await fetch(`${SUPABASE_URL}${path}`, {
+      method,
+      headers: {
+        apikey: token,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(prefer ? { Prefer: prefer } : {}),
+        ...(traceId ? { "X-Request-Id": traceId } : {}),
+      },
+      body: data === undefined ? undefined : JSON.stringify(data),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (cause) {
+    throw Object.assign(new Error("The report database could not be reached. Your report remains saved on this device; try again."), { status: 503, code: "database_unavailable", retryable: true, cause });
+  }
   const text = await response.text();
   const result = parseResponseBody(text);
-  if (!response.ok) throw Object.assign(new Error(result?.message || result?.msg || `Database request failed (${response.status})`), { status: response.status });
+  if (!response.ok) throw Object.assign(new Error(result?.message || result?.msg || `Database request failed (${response.status})`), { status: response.status >= 500 ? 503 : response.status, code: result?.code || (response.status >= 500 ? "database_unavailable" : "database_rejected"), retryable: response.status >= 500, database_status: response.status, database_details: result?.details || null, database_hint: result?.hint || null });
   return result;
+}
+
+function reportTrace(traceId, stage, details = {}) {
+  console.info(JSON.stringify({ event: "report_ingestion", trace_id: traceId, stage, at: new Date().toISOString(), ...details }));
 }
 
 async function supabaseByIds(table, ids, select, batchSize = 100, column = "id") {
@@ -254,6 +265,9 @@ async function moderationContext(row,full=false){
 
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin;
+  const suppliedRequestId=String(req.headers["x-feathermap-request-id"]||"");
+  const requestId=/^[0-9a-f-]{36}$/i.test(suppliedRequestId)?suppliedRequestId:crypto.randomUUID();
+  res.setHeader("X-FeatherMap-Request-Id",requestId);
   if (req.method === "OPTIONS") { res.writeHead(origin && ALLOWED_ORIGINS.has(origin) ? 204 : 403, cors(origin)); return res.end(); }
   if (origin && !ALLOWED_ORIGINS.has(origin)) return json(res, 403, { error: "Origin not allowed" }, origin);
 
@@ -405,11 +419,14 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && url.pathname === "/api/sightings") {
       rateLimit(req, 10);
+      reportTrace(requestId,"received",{content_length:Number(req.headers["content-length"]||0),platform:String(req.headers["x-feathermap-platform"]||"unknown")});
       const reportingConfig=await configValue("reporting",{enabled:true,max_report_age_days:7});if(reportingConfig.enabled===false)throw Object.assign(new Error("Reporting is temporarily disabled"),{status:503});
       const { user } = await activeUser(req);
       const input = await body(req);
-      const clientReportId=/^[0-9a-f-]{36}$/i.test(input.client_report_id||"")?input.client_report_id:null;if(clientReportId){const existing=await supabase(`/rest/v1/sightings?reporter_id=eq.${user.id}&client_report_id=eq.${clientReportId}&select=id,expires_at&limit=1`);if(existing.length){await supabase("/rest/v1/client_sync_events",{method:"POST",data:{user_id:user.id,client_report_id:clientReportId,client_version:String(req.headers["x-feathermap-version"]||""),platform:String(req.headers["x-feathermap-platform"]||"web"),event_type:"duplicate"},prefer:"return=minimal"});return json(res,200,{id:existing[0].id,expires_at:existing[0].expires_at,idempotent_replay:true},origin)}}
+      reportTrace(requestId,"authenticated",{user_id:user.id,client_report_id:String(input.client_report_id||"")||null});
+      const clientReportId=/^[0-9a-f-]{36}$/i.test(input.client_report_id||"")?input.client_report_id:null;if(clientReportId){const existing=await supabase(`/rest/v1/sightings?reporter_id=eq.${user.id}&client_report_id=eq.${clientReportId}&select=id,expires_at&limit=1`);if(existing.length){await supabase("/rest/v1/client_sync_events",{method:"POST",data:{user_id:user.id,client_report_id:clientReportId,client_version:String(req.headers["x-feathermap-version"]||""),platform:String(req.headers["x-feathermap-platform"]||"web"),event_type:"duplicate"},prefer:"return=minimal",traceId:requestId}).catch(error=>reportTrace(requestId,"sync_telemetry_failed",{sighting_id:existing[0].id,code:error.code||"telemetry_error"}));reportTrace(requestId,"idempotent_replay",{user_id:user.id,client_report_id:clientReportId,sighting_id:existing[0].id});return json(res,200,{id:existing[0].id,expires_at:existing[0].expires_at,idempotent_replay:true,request_id:requestId},origin)}}
       const { latitude, longitude,occurredAt,locationSource } = validateSighting(input,reportingConfig.max_report_age_days);
+      reportTrace(requestId,"payload_validated",{user_id:user.id,client_report_id:String(input.client_report_id||"")||null,entry_count:Array.isArray(input.entries)?input.entries.length:1,location_source:locationSource});
       const legacyRange={"1-10":"1_10","10-25":"11_25","25-50":"26_50","50+":"51_100"}[input.flock_size];
       const rawEntries=(Array.isArray(input.entries)&&input.entries.length?input.entries:[{species:input.species,subspecies:input.subspecies,count_range:input.count_range||legacyRange}]).slice(0,20);
       const entries=[];
@@ -427,11 +444,15 @@ const server = http.createServer(async (req, res) => {
         exact_latitude: latitude, exact_longitude: longitude, accuracy_meters: Math.min(Math.max(Number(input.accuracy_meters) || 0, 0), 10000),
         occurred_at:occurredAt.toISOString(),submitted_at:new Date().toISOString(),expires_at:new Date(occurredAt.getTime()+6*3600000).toISOString(),status:occurredAt.getTime()<Date.now()-6*3600000?"expired":"active",location_source:locationSource,
         notes: typeof input.notes === "string" ? input.notes.trim().slice(0, 1000) || null : null,weather:Date.now()-occurredAt.getTime()<3600000?weather:null,observed_weather:observedWeather(input.observed_weather),reporter_attribution:attribution,
-      }, prefer: "return=representation" });
-      const entryRows=await supabase("/rest/v1/sighting_bird_entries",{method:"POST",data:entries.map(entry=>({sighting_id:rows[0].id,entry_order:entry.entryOrder,species_slug:entry.speciesSlug,subspecies_slug:entry.subspeciesSlug,count_range_slug:entry.range.slug,flock_label_snapshot:entry.range.display_label,flock_min_snapshot:entry.range.minimum_count,flock_max_snapshot:entry.range.maximum_count,estimated_birds_snapshot:entry.estimate,banded_count:entry.banded?1:0})),prefer:"return=representation"});
+      }, prefer: "return=representation", traceId:requestId });
+      if(!rows?.[0]?.id)throw Object.assign(new Error("The database did not confirm the report was saved. Your draft remains on this device."),{status:503,code:"persistence_not_confirmed",retryable:true});
+      reportTrace(requestId,"sighting_persisted",{user_id:user.id,client_report_id:clientReportId,sighting_id:rows[0].id});
+      const entryRows=await supabase("/rest/v1/sighting_bird_entries",{method:"POST",data:entries.map(entry=>({sighting_id:rows[0].id,entry_order:entry.entryOrder,species_slug:entry.speciesSlug,subspecies_slug:entry.subspeciesSlug,count_range_slug:entry.range.slug,flock_label_snapshot:entry.range.display_label,flock_min_snapshot:entry.range.minimum_count,flock_max_snapshot:entry.range.maximum_count,estimated_birds_snapshot:entry.estimate,banded_count:entry.banded?1:0})),prefer:"return=representation",traceId:requestId});
+      if(entryRows.length!==entries.length)throw Object.assign(new Error("The report was received but its bird entries were not fully persisted. Contact support with the reference shown."),{status:503,code:"persistence_incomplete",retryable:true});
+      reportTrace(requestId,"bird_entries_persisted",{sighting_id:rows[0].id,entry_count:entryRows.length});
       for(const entry of entries.filter(item=>item.banded)){const entryRow=entryRows.find(item=>item.entry_order===entry.entryOrder);const bandRows=await supabase("/rest/v1/banded_bird_reports",{method:"POST",data:{reporter_id:user.id,sighting_id:rows[0].id,sighting_entry_id:entryRow?.id||null,client_report_id:crypto.randomUUID(),species_slug:entry.speciesSlug,subspecies_slug:entry.subspeciesSlug,band_number:entry.bandNumber,band_type:entry.bandType,band_color:entry.bandColor,encounter_type:entry.encounter,occurred_at:occurredAt.toISOString(),exact_latitude:latitude,exact_longitude:longitude,notes:typeof input.notes==="string"?input.notes.trim().slice(0,2000)||null:null},prefer:"return=representation"});if(entry.bandNumber){const duplicate=await supabase(`/rest/v1/banded_bird_reports?id=neq.${bandRows[0].id}&species_slug=eq.${encodeURIComponent(entry.speciesSlug)}&band_number=ilike.${encodeURIComponent(entry.bandNumber)}&sighting_id=not.is.null&select=id,sighting_id&limit=1`);if(duplicate.length){const pair=[rows[0].id,duplicate[0].sighting_id].sort();await supabase("/rest/v1/duplicate_candidates?on_conflict=sighting_a,sighting_b",{method:"POST",data:{sighting_a:pair[0],sighting_b:pair[1],similarity:100},prefer:"resolution=ignore-duplicates,return=minimal"})}}}
-      const nearby=await supabase(`/rest/v1/sightings?id=neq.${rows[0].id}&species_slug=eq.${encodeURIComponent(primary.speciesSlug)}&status=eq.active&occurred_at=gte.${encodeURIComponent(new Date(Date.now()-3*3600000).toISOString())}&exact_latitude=gte.${latitude-.18}&exact_latitude=lte.${latitude+.18}&exact_longitude=gte.${longitude-.22}&exact_longitude=lte.${longitude+.22}&select=id,exact_latitude,exact_longitude&limit=5`);for(const other of nearby){const similarity=Math.max(60,Math.round(100-Math.hypot((other.exact_latitude-latitude)*69,(other.exact_longitude-longitude)*55)*4));const pair=[rows[0].id,other.id].sort();await supabase("/rest/v1/duplicate_candidates?on_conflict=sighting_a,sighting_b",{method:"POST",data:{sighting_a:pair[0],sighting_b:pair[1],similarity},prefer:"resolution=ignore-duplicates,return=minimal"});}
-      if(clientReportId)await supabase("/rest/v1/client_sync_events",{method:"POST",data:{user_id:user.id,client_report_id:clientReportId,client_version:String(req.headers["x-feathermap-version"]||""),platform:String(req.headers["x-feathermap-platform"]||"web"),event_type:"submitted"},prefer:"return=minimal"});await userActivity(req,user.id,"sighting.create","sighting",rows[0].id,"success",null,{species:primary.speciesSlug,subspecies:subspeciesSlug,count_range:countRange.slug,flock_label:countRange.display_label,estimated_birds:entries.reduce((sum,item)=>sum+Number(item.estimate||0),0),bird_entries:entries.length,banded_entries:entries.filter(item=>item.banded).length,occurred_at:occurredAt.toISOString(),submitted_at:rows[0].submitted_at,location_source:locationSource,delay_minutes:Math.max(0,Math.round((Date.now()-occurredAt.getTime())/60000))});return json(res,201,{id:rows[0].id,expires_at:rows[0].expires_at,entries:entryRows.length},origin);
+      try{const nearby=await supabase(`/rest/v1/sightings?id=neq.${rows[0].id}&species_slug=eq.${encodeURIComponent(primary.speciesSlug)}&status=eq.active&occurred_at=gte.${encodeURIComponent(new Date(Date.now()-3*3600000).toISOString())}&exact_latitude=gte.${latitude-.18}&exact_latitude=lte.${latitude+.18}&exact_longitude=gte.${longitude-.22}&exact_longitude=lte.${longitude+.22}&select=id,exact_latitude,exact_longitude&limit=5`);for(const other of nearby){const similarity=Math.max(60,Math.round(100-Math.hypot((other.exact_latitude-latitude)*69,(other.exact_longitude-longitude)*55)*4));const pair=[rows[0].id,other.id].sort();await supabase("/rest/v1/duplicate_candidates?on_conflict=sighting_a,sighting_b",{method:"POST",data:{sighting_a:pair[0],sighting_b:pair[1],similarity},prefer:"resolution=ignore-duplicates,return=minimal"});}}catch(error){reportTrace(requestId,"enrichment_failed",{sighting_id:rows[0].id,code:error.code||"enrichment_error",message:error.message})}
+      if(clientReportId)await supabase("/rest/v1/client_sync_events",{method:"POST",data:{user_id:user.id,client_report_id:clientReportId,client_version:String(req.headers["x-feathermap-version"]||""),platform:String(req.headers["x-feathermap-platform"]||"web"),event_type:"submitted"},prefer:"return=minimal",traceId:requestId}).catch(error=>reportTrace(requestId,"sync_telemetry_failed",{sighting_id:rows[0].id,code:error.code||"telemetry_error"}));await userActivity(req,user.id,"sighting.create","sighting",rows[0].id,"success",null,{trace_id:requestId,species:primary.speciesSlug,subspecies:subspeciesSlug,count_range:countRange.slug,flock_label:countRange.display_label,estimated_birds:entries.reduce((sum,item)=>sum+Number(item.estimate||0),0),bird_entries:entries.length,banded_entries:entries.filter(item=>item.banded).length,occurred_at:occurredAt.toISOString(),submitted_at:rows[0].submitted_at,location_source:locationSource,delay_minutes:Math.max(0,Math.round((Date.now()-occurredAt.getTime())/60000))});reportTrace(requestId,"completed",{user_id:user.id,client_report_id:clientReportId,sighting_id:rows[0].id});return json(res,201,{id:rows[0].id,expires_at:rows[0].expires_at,entries:entryRows.length,request_id:requestId},origin);
     }
 
     if(req.method==="GET"&&url.pathname==="/api/banded-birds"){
@@ -705,10 +726,10 @@ const server = http.createServer(async (req, res) => {
 
     return json(res, 404, { error: "Not found" }, origin);
   } catch (error) {
-    const requestId = crypto.randomUUID();
     console.error(requestId, error);
     const status=error.status||500,code=error.code||({400:"invalid_request",401:"authentication_required",403:"permission_denied",404:"not_found",409:"conflict",429:"rate_limited"}[status]||"internal_error");
-    return json(res,status,{error:error.status?error.message:"Internal server error",code,retryable:status===429||status>=500,requires_edit:status===400||status===409,request_id:requestId},origin);
+    if(req.method==="POST"&&req.url?.startsWith("/api/sightings"))reportTrace(requestId,"failed",{code,status,database_status:error.database_status||null,database_details:error.database_details||null,message:error.message});
+    return json(res,status,{error:error.status?error.message:"Internal server error",code,retryable:error.retryable??(status===429||status>=500),requires_edit:status===400||status===409,details:error.database_details||undefined,hint:error.database_hint||undefined,request_id:requestId},origin);
   }
 });
 

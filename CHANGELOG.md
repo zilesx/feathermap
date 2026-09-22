@@ -1,4 +1,11 @@
 # FeatherMap changelog
+
+## 2026-09-21 — Report ingestion reliability and telemetry
+
+- Added a correlation ID that follows each report from browser dispatch through API validation, Supabase persistence, and completion or failure logs.
+- Verified parent sighting and bird-entry persistence before reporting success to the client.
+- Preserved successful report ingestion when optional duplicate-detection or sync telemetry enrichment is unavailable.
+- Added actionable client errors for validation failures, Supabase rejections, timeouts, and connection failures, including a support reference ID.
 ## 2026-08-19 — Durable report controls and category-driven taxonomy
 
 - Replaced the invalid legacy accent token with FeatherMap's canonical light/dark theme tokens so selected report type, location, activity, and temperature controls remain unmistakable.
