@@ -1,5 +1,13 @@
 # FeatherMap changelog
 
+## 2026-09-30 — Stripe subscription billing foundation
+
+- Added hosted Stripe Checkout and Customer Portal sessions without coupling payment processing to mobile clients.
+- Added signed, idempotent webhook processing for checkout, subscription updates/deletions, and failed invoices.
+- Added a shared authenticated entitlement endpoint for web, iOS, and Android clients.
+- Added an administrator Billing workspace for Stripe connectivity, tier-price mappings, subscription behavior, and billing health.
+- Added additive billing metadata, price mappings, webhook receipts, and billing synchronization logs; checkout remains disabled until Stripe secrets and tier prices are configured.
+
 ## 2026-09-21 — Report ingestion reliability and telemetry
 
 - Added a correlation ID that follows each report from browser dispatch through API validation, Supabase persistence, and completion or failure logs.

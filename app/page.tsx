@@ -4,6 +4,7 @@ import MigrationOverlay from "./migration-overlay";
 import FeedbackPanel from "./feedback-panel";
 import StableMap from "./stable-map";
 import "./feedback-launcher.css";
+import "./billing.css";
 import { newClientId, webDraftRepository, webLocationService, webNetworkService, type ReportDraft } from "./platform-services";
 import { networkError, operationFor } from "./request-errors";
 import "./platform-foundation.css";
@@ -329,6 +330,9 @@ export default function Home() {
     const [mfaEnroll, setMfaEnroll] = useState<any>(null);
     const [mfaCode, setMfaCode] = useState("");
     const [profileOpen, setProfileOpen] = useState(false);
+    const [billingOpen, setBillingOpen] = useState(false);
+    const [billingData, setBillingData] = useState<any>({ entitlement: null, plans: [] });
+    const [billingStatus, setBillingStatus] = useState("");
     const [profileDraft, setProfileDraft] = useState<any>({});
     const [profileSaving, setProfileSaving] = useState(false);
     const [sessions, setSessions] = useState<any[]>([]);
@@ -710,6 +714,9 @@ export default function Home() {
     catch (e) {
         setSecurityStatus(e instanceof Error ? e.message : "Security settings unavailable");
     } }
+    async function openBilling() { setBillingOpen(true); setBillingStatus("Loading membership…"); try { const [entitlement, plans] = await Promise.all([request("/api/entitlement", { headers: { Authorization: `Bearer ${token}` } }), request("/api/billing/plans", { headers: { Authorization: `Bearer ${token}` } })]); setBillingData({ entitlement, plans }); setBillingStatus(""); } catch (error) { setBillingStatus(error instanceof Error ? error.message : "Billing is unavailable"); } }
+    async function startCheckout(tier:string,interval:string) { setBillingStatus("Opening secure checkout…"); try { const result=await request("/api/billing/checkout",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({tier,interval})}); location.href=result.url; } catch(error){setBillingStatus(error instanceof Error?error.message:"Checkout is unavailable")} }
+    async function manageBilling() { setBillingStatus("Opening subscription management…"); try { const result=await request("/api/billing/portal",{method:"POST",headers:{Authorization:`Bearer ${token}`}}); location.href=result.url; } catch(error){setBillingStatus(error instanceof Error?error.message:"Subscription management is unavailable")} }
     async function openProfile() { setProfileDraft({ ...profile }); setProfileOpen(true); setSecurityStatus(""); }
     async function saveProfile() { if (profileSaving) return; setProfileSaving(true); setSecurityStatus("Saving profile and map preferences…"); try {
         await request("/api/profile", { method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(profileDraft) });
@@ -1014,5 +1021,7 @@ export default function Home() {
   {profile && <div className={`mobile-location-indicator ${reportLocation.source === "current" ? "enabled" : "manual"}`} role="status"><span aria-hidden="true">{reportLocation.source === "current" ? "●" : "◇"}</span>{reportLocation.source === "current" ? "Location available" : "Manual location"}</div>}
   {photoRetry && <aside className="photo-retry-notice" role="alert"><span><b>Report saved</b>The photo still needs to be uploaded.</span><button onClick={retryReportPhoto}>Retry photo</button><button aria-label="Dismiss photo upload notice" onClick={() => setPhotoRetry(null)}>×</button></aside>}
   {sessionRefreshError && <aside className="network-status-notice" role="alert"><span>{sessionRefreshError}</span><button onClick={() => setSessionRefreshError("")} aria-label="Dismiss session error">×</button></aside>}
+  {panel === "more" && profile && !billingOpen && <button className="account-billing-launch" onClick={openBilling}>Membership &amp; billing</button>}
+  {billingOpen && <div className="modal-wrap" onClick={() => setBillingOpen(false)}><section className="modal billing-modal" onClick={event => event.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">MEMBERSHIP</span><h2>Membership &amp; billing</h2></div><button onClick={() => setBillingOpen(false)} aria-label="Close billing">×</button></div>{billingData.entitlement&&<div className="current-entitlement"><span>Current access</span><b>{String(billingData.entitlement.tier||"free").replaceAll("_"," ")}</b><small>{billingData.entitlement.expiresAt?`Renews or expires ${new Date(billingData.entitlement.expiresAt).toLocaleDateString()}`:"No expiration"}</small></div>}<div className="billing-plan-list">{(billingData.plans?.levels||[]).filter((level:any)=>level.key!=="free").map((level:any)=><article key={level.key}><h3>{level.display_name}</h3><p>{level.description}</p><div>{(level.prices||[]).map((price:any)=><button className="share" key={`${price.billing_interval}-${price.currency}`} disabled={!billingData.plans.enabled} onClick={()=>startCheckout(level.key,price.billing_interval)}>{new Intl.NumberFormat("en-US",{style:"currency",currency:String(price.currency).toUpperCase()}).format(Number(price.unit_amount)/100)} / {price.billing_interval}</button>)}</div></article>)}</div>{billingData.entitlement?.tier!=="free"&&<button className="auth-switch" onClick={manageBilling}>Manage subscription</button>}{billingStatus&&<p className="form-status">{billingStatus}</p>}</section></div>}
   </main>;
 }
